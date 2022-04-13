@@ -1,7 +1,8 @@
-import * as dotenv from "dotenv";
-dotenv.config({ path: __dirname + "/.env" });
+import { config } from "dotenv";
+config({ path: ".env" });
 
 import "@nomiclabs/hardhat-ethers";
+import "hardhat-typechain";
 
 module.exports = {
   solidity: "0.7.5",

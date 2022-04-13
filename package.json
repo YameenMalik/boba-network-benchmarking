@@ -5,7 +5,10 @@
   "main": "index.js",
   "scripts": {
     "compile": "npx hardhat compile",
-    "test": "npx hardhat test"
+    "test": "npx hardhat test",
+    "deploy:boba": "npx hardhat run scripts/deploy.ts --network boba-rinkeby-testnet",
+    "deploy:hardhat": "npx hardhat run scripts/deploy.ts --network hardhat",
+    "benchmark": "ts-node scripts/benchmark.ts"
   },
   "repository": {
     "type": "git",
@@ -20,15 +23,19 @@
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.5",
     "@types/mocha": "^9.1.0",
+    "@types/yargs": "^17.0.10",
     "ts-node": "^10.7.0",
     "typescript": "^4.6.3",
     "yarn": "^1.22.18"
   },
   "dependencies": {
-    "@typechain/ethers-v5": "^10.0.0",
+    "@typechain/ethers-v5": "^6.0.5",
     "chai": "^4.3.6",
     "dotenv": "^16.0.0",
     "hardhat": "^2.1.2",
-    "mocha": "^9.2.2"
+    "hardhat-typechain": "^0.3.5",
+    "mocha": "^9.2.2",
+    "typechain": "^4.0.3",
+    "yargs": "^17.4.1"
   }
 }
