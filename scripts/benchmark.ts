@@ -34,6 +34,8 @@ const POST_TASK = async () => {
     console.log("-> Current Number is: ", number);
 };
 
+const delay = (ms:number) => new Promise(resolve => setTimeout(resolve, ms))
+
 
 
 async function main(numOps:number){
@@ -51,12 +53,14 @@ async function main(numOps:number){
     let eventCount = 0;
     // event listener
     stressTest.on("AddNumber", (...args:any[])=>{
-        console.log("Listener Count: ", +args[0]);
-        if(++eventCount == numOps){
+        console.log(`Listener Event Count: ${++eventCount} - AddNumber(${+args[0]})`);
+        if(eventCount == numOps){
             stressTest.removeAllListeners();
         }
     })
 
+    // wait for 3 sec to give time to event listener to be established
+    await delay(3000);
 
     console.log("### Performing Pre-Tasks ###");
     await PRE_TASK();
