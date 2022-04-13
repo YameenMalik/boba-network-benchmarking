@@ -1,0 +1,34 @@
+{
+  "name": "boba-network-benchmarking",
+  "version": "1.0.0",
+  "description": "Script to test out the TPS of boba network",
+  "main": "index.js",
+  "scripts": {
+    "compile": "npx hardhat compile",
+    "test": "npx hardhat test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YameenMalik/boba-network-benchmarking.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/YameenMalik/boba-network-benchmarking/issues"
+  },
+  "homepage": "https://github.com/YameenMalik/boba-network-benchmarking#readme",
+  "devDependencies": {
+    "ts-node": "^10.7.0",
+    "typescript": "^4.6.3",
+    "yarn": "^1.22.18",
+    "@nomiclabs/hardhat-ethers": "^2.0.5",
+    "@types/mocha": "^9.1.0"
+  },
+  "dependencies": {
+    "@typechain/ethers-v5": "^10.0.0",
+    "chai": "^4.3.6",
+    "dotenv": "^16.0.0",
+    "hardhat": "^2.9.3",
+    "mocha": "^9.2.2"
+  }
+}
