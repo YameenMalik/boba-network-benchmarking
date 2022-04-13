@@ -2,7 +2,6 @@ import * as dotenv from "dotenv";
 dotenv.config({ path: __dirname + "/.env" });
 
 import "@nomiclabs/hardhat-ethers";
-import "@nomiclabs/hardhat-waffle";
 
 module.exports = {
   solidity: "0.7.5",
@@ -12,7 +11,7 @@ module.exports = {
     target: "ethers-v5",
   },
 
-  defaultNetwork: "boba-rinkeby-testnet",
+  defaultNetwork: process.env.NETWORK,
 
   networks: {
     "hardhat": {
@@ -23,8 +22,8 @@ module.exports = {
     "boba-rinkeby-testnet": {
       gas: 'auto',
       gasPrice: 'auto',
-      url: process.env.BOBA_RINKEBY_URL,
-      accounts: [process.env.DEPLOYER_PRIVATE_KEY]
+      url: process.env.BOBA_RINKEBY_URL as string,
+      accounts: [process.env.DEPLOYER_PRIVATE_KEY as string]
     }
   }
 };

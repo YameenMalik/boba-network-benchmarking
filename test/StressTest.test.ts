@@ -2,14 +2,15 @@ import {ethers} from "hardhat";
 const { expect } = require("chai");
 
 describe("StressTest contract", function () {
-  it("Deployment should assign the total supply of tokens to the owner", async function () {
+  it("should add a number", async function () {
     const [owner] = await ethers.getSigners();
 
-    const Token = await ethers.getContractFactory("StressTest");
+    const StressTest = await ethers.getContractFactory("StressTest");
 
-    const hardhatToken = await Token.deploy();
+    const contract = await StressTest.deploy();
 
-    // const ownerBalance = await hardhatToken.balanceOf(owner.address);
-    // expect(await hardhatToken.totalSupply()).to.equal(ownerBalance);
+    await contract.addNumber();
+    
+    expect(+await contract.countNumber()).to.equal(1);
   });
 });

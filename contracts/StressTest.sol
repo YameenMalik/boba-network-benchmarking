@@ -3,7 +3,8 @@ pragma solidity 0.7.5;
 pragma abicoder v2;
 
 contract StressTest {
-    uint256 countNumber;
+    
+    uint256 public countNumber;
 
     receive() external payable {}
 
@@ -17,6 +18,7 @@ contract StressTest {
         countNumber++;
         emit AddNumber(countNumber);
     }
+
 
     function addETH(testAccounts[] calldata accounts) public {
         for (uint256 i = 0; i < accounts.length; i++) {
