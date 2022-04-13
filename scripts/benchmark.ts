@@ -48,7 +48,7 @@ async function main(numOps:number){
     console.log("-> Number of transactions to perform:", numOps);
     console.log("-> Number of wallets:", numWallets);
     numOps = Math.min(numWallets, numOps);
-    console.log("-> Perofrming operations:", numOps);
+    console.log("-> Performing operations:", numOps);
 
     let eventCount = 0;
     // event listener
