@@ -8,7 +8,8 @@
     "test": "npx hardhat test",
     "deploy:boba": "npx hardhat run scripts/deploy.ts --network boba-rinkeby-testnet",
     "deploy:hardhat": "npx hardhat run scripts/deploy.ts --network hardhat",
-    "benchmark": "ts-node scripts/benchmark.ts"
+    "benchmark:mock": "ts-node scripts/01_benchmark.ts",
+    "benchmark:trades": "ts-node scripts/02_benchmark.ts"
   },
   "repository": {
     "type": "git",
@@ -22,6 +23,7 @@
   "homepage": "https://github.com/YameenMalik/boba-network-benchmarking#readme",
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.5",
+    "@types/lodash": "^4.14.181",
     "@types/mocha": "^9.1.0",
     "@types/yargs": "^17.0.10",
     "ts-node": "^10.7.0",
@@ -29,11 +31,13 @@
     "yarn": "^1.22.18"
   },
   "dependencies": {
+    "@dtradeorg/dtrade-ts": "^1.8.6",
     "@typechain/ethers-v5": "^6.0.5",
     "chai": "^4.3.6",
     "dotenv": "^16.0.0",
     "hardhat": "^2.1.2",
     "hardhat-typechain": "^0.3.5",
+    "lodash": "^4.17.21",
     "mocha": "^9.2.2",
     "typechain": "^4.0.3",
     "yargs": "^17.4.1"

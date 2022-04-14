@@ -6,7 +6,7 @@ config({ path: ".env" });
 
 
 // make sure to deploy the contract before running the script
-const contractAddresses = require("../deployedContracts.json")["StressTest"];
+const contractAddress = require("../deployedContracts.json")["StressTest"];
 const walletsPath = `${__dirname}/wallets.json`;
 
 
@@ -14,7 +14,7 @@ const provider = new ethers.providers.JsonRpcProvider(process.env.BOBA_RINKEBY_U
 const faucet = new Wallet(process.env.DEPLOYER_PRIVATE_KEY as string, provider); 
 
 const stressTestFactory = new StressTest__factory(faucet);
-const stressTest = stressTestFactory.attach(contractAddresses);
+const stressTest = stressTestFactory.attach(contractAddress);
 
 
 // Write the contract call for which to BENCHMARK the chain
