@@ -80,15 +80,15 @@ async function main(numOps:number){
     numOps = Math.min(numWallets, numOps);
     console.log("-> Performing operations:", numOps);
 
-    let eventCount = 0;
-    // event listener
-    PerpetualV1.on("LogTrade", (...args:any[])=>{
-        console.log(`Listener Event Count: ${++eventCount}`);
-        if(eventCount == numOps){
-            PerpetualV1.removeAllListeners();
-            // process.exit(0);
-        }
-    })
+    // let eventCount = 0;
+    // // event listener
+    // PerpetualV1.on("LogTrade", (...args:any[])=>{
+    //     console.log(`Listener Event Count: ${++eventCount}`);
+    //     if(eventCount == numOps){
+    //         PerpetualV1.removeAllListeners();
+    //         // process.exit(0);
+    //     }
+    // })
 
 
     // add accounts to w3
