@@ -8,11 +8,20 @@ config({ path: ".env" });
 
 
 // make sure to deploy the contract before running the script
-const ERC20Address = "0x9D26c400FD09ec73c10A97410a6D295c7E0e8a59";
+
+// BOBA RINKEBY
+// const ERC20Address = "0x9D26c400FD09ec73c10A97410a6D295c7E0e8a59";
+
+// BOBA MOONBASE
+const ERC20Address = "0x57AB85a85f75fb4E9d2Ee85a28913F2DEe9aD283";
+
+// ARBITRUM
+// const ERC20Address = "0x065a8a6aD9a027b834b1a746e0B03e88E8d5D895";
+
 const walletsPath = `${__dirname}/wallets.json`;
 
 
-const provider = new ethers.providers.JsonRpcProvider(process.env.BOBA_RINKEBY_URL as string);
+const provider = new ethers.providers.JsonRpcProvider(process.env.BOBA_MOONBASE_URL as string);
 const faucet = new Wallet(process.env.DEPLOYER_PRIVATE_KEY as string, provider); 
 
 const ERC20Token = new Contract(ERC20Address, TEST_USDC_ABI.abi, provider);

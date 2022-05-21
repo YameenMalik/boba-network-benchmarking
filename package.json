@@ -6,7 +6,8 @@
   "scripts": {
     "compile": "npx hardhat compile",
     "test": "npx hardhat test",
-    "deploy:boba": "npx hardhat run scripts/deploy.ts --network boba-rinkeby-testnet",
+    "deploy:boba:rinkeby": "npx hardhat run scripts/deploy.ts --network boba-rinkeby-testnet",
+    "deploy:boba:moonbase": "npx hardhat run scripts/deploy.ts --network boba-moonbase-testnet",
     "deploy:hardhat": "npx hardhat run scripts/deploy.ts --network hardhat",
     "benchmark:mock": "ts-node scripts/01_benchmark.ts",
     "benchmark:trades": "ts-node scripts/02_benchmark.ts",

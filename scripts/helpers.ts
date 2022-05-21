@@ -168,7 +168,7 @@ export async function generateOrders(
       // create a signed order from addr 1
       const o1 = await createSignedOrder(orderSigner, {
         maker: accounts[0].address,
-        price: 30,
+        price: 10,
         amount: 1,
         isBuy: false
       } as TestOrder);
@@ -176,7 +176,7 @@ export async function generateOrders(
       // create a signed order from addr 2
       const o2 = await createSignedOrder(orderSigner, {
         maker: accounts[1].address,
-        price: 30,
+        price: 10,
         amount: 1,
         isBuy: true
       } as TestOrder);

@@ -11,19 +11,38 @@ config({ path: ".env" });
 
 
 // make sure to deploy the contract before running the script
-const perpetualV1Address = "0xE7f98A11D8B7870ceF9243b9153B5e18d2f2dA4e";
-const ordersAddress = "0xb89A6553423863466f95f12066443ad811898B3c";
+// BOBA RINKEBY
+// const perpetualV1Address = "0xE7f98A11D8B7870ceF9243b9153B5e18d2f2dA4e";
+// const ordersAddress = "0xb89A6553423863466f95f12066443ad811898B3c";
+
+// BOBA MOONBASE
+const perpetualV1Address = "0x52d92ebBe4122d8Ed5394819d302AD234001D2C7";
+const ordersAddress = "0x36AAc8c385E5FA42F6A7F62Ee91b5C2D813C451C";
+
+
+// ARBITRUM
+// const perpetualV1Address = "0x4fe5cCC36975DA9Ea03b302B118a6be3455F3153";
+// const ordersAddress = "0x905e24367781c232E673cF5F6AE119cA0D061c29";
+
 
 const walletsPath = `${__dirname}/wallets.json`;
 
 const w3 = new Web3(process.env.RPC_URL as string);
-const provider = new ethers.providers.JsonRpcProvider(process.env.BOBA_RINKEBY_URL as string);
+const provider = new ethers.providers.JsonRpcProvider(process.env.BOBA_MOONBASE_URL as string);
 const faucet = new Wallet(process.env.DEPLOYER_PRIVATE_KEY as string, provider); 
 
 const perpetualV1Factory = new orderbook.PerpetualV1__factory(faucet);
 const PerpetualV1 = perpetualV1Factory.attach(perpetualV1Address);
 let currentPositionSize:number = 0;
 
+
+const replicaProvider = new ethers.providers.JsonRpcProvider("https://replica.bobabase.boba.network");
+const listenerFaucet = new Wallet(process.env.DEPLOYER_PRIVATE_KEY as string, replicaProvider); 
+const perpetualV1Factory2 = new orderbook.PerpetualV1__factory(listenerFaucet);
+const perpListener = perpetualV1Factory2.attach(perpetualV1Address);
+
+
+// make sure these accounts have USDT in margin bank
 let accounts = [
 {
     // maker of each order
@@ -47,6 +66,7 @@ const PRE_TASK = async () => {
     const balance = await PerpetualV1.getAccountPositionBalance(accounts[0].address);
     currentPositionSize = Number(new BigNumber(balance.size.toHexString()).toFixed(0))/1e18;
     console.log("-> Initial Position Size: ", currentPositionSize);
+
 };
 
 // Write any post-tasks to be executed AFTER running the TASK
@@ -80,15 +100,26 @@ async function main(numOps:number){
     numOps = Math.min(numWallets, numOps);
     console.log("-> Performing operations:", numOps);
 
-    // let eventCount = 0;
-    // // event listener
-    // PerpetualV1.on("LogTrade", (...args:any[])=>{
-    //     console.log(`Listener Event Count: ${++eventCount}`);
-    //     if(eventCount == numOps){
-    //         PerpetualV1.removeAllListeners();
-    //         // process.exit(0);
-    //     }
-    // })
+    const chainHead = +await provider.getBlockNumber();
+    console.log("-> Chain head at: ", chainHead);
+
+    let eventCount = 0;
+    var listenerStart = process.hrtime()
+
+    // event listener
+    perpListener.on("LogTrade", (...args:any[])=>{
+        const eventBlock = args[12]["blockNumber"];
+        if(eventBlock > chainHead){
+            // console.log(`Listener Event Count: ${++eventCount}`);
+            if(eventCount == numOps){
+                var listenerEnd = process.hrtime(listenerStart)
+                console.info('-> All Events Received Time: %ds %dms', listenerEnd[0], listenerEnd[1] / 1000000)
+                PerpetualV1.removeAllListeners();
+                process.exit(0);
+            }
+        }
+    })
+
 
 
     // add accounts to w3
@@ -116,6 +147,12 @@ async function main(numOps:number){
     const waits = []
     let i = 0;
     while(i < numOps){
+        
+        // start listener start time the moment first contract call is made
+        if(i == 0){
+            listenerStart = process.hrtime();
+        }
+
         waits.push(TASK(wallets[i], transformedOrders[i].accounts, transformedOrders[i].trades));
         i++;
     }
@@ -125,7 +162,7 @@ async function main(numOps:number){
     var end = process.hrtime(start)
 
 
-    console.info('-> Execution time (hr): %ds %dms', end[0], end[1] / 1000000)
+    console.info('-> RPC call response time: %ds %dms', end[0], end[1] / 1000000)
 
     console.log("### Performing Post-Tasks ###");
 
