@@ -36,8 +36,8 @@ const PerpetualV1 = perpetualV1Factory.attach(perpetualV1Address);
 let currentPositionSize:number = 0;
 
 
-// const replicaProvider = new ethers.providers.JsonRpcProvider("https://replica.bobabase.boba.network");
-const replicaProvider = new ethers.providers.JsonRpcProvider("http://0.0.0.0:8549");
+const replicaProvider = new ethers.providers.JsonRpcProvider("https://replica.bobabase.boba.network");
+// const replicaProvider = new ethers.providers.JsonRpcProvider("http://0.0.0.0:8549");
 const listenerFaucet = new Wallet(process.env.DEPLOYER_PRIVATE_KEY as string, replicaProvider); 
 const perpetualV1Factory2 = new orderbook.PerpetualV1__factory(listenerFaucet);
 const perpListener = perpetualV1Factory2.attach(perpetualV1Address);
@@ -81,7 +81,7 @@ const delay = (ms:number) => new Promise(resolve => setTimeout(resolve, ms))
 
 
 async function main(numOps:number){
-    
+
     const orderSigner = new OrderSigner(
         w3,
         "Orders",
@@ -111,18 +111,18 @@ async function main(numOps:number){
     perpListener.on("LogTrade", (...args:any[])=>{
         const eventBlock = args[12]["blockNumber"];
         // ignore events if belongs to block < head of the chain
-        if(eventBlock > chainHead){
+        if(eventBlock >= chainHead){
             // console.log(`Listener Event Count: ${++eventCount}`);
 
             // if event count is equal to number of trades
-            if(eventCount == numOps){
+            if(++eventCount == numOps){
                 var listenerEnd = process.hrtime(listenerStart)
                 console.info('-> All Events Received Time: %ds %dms', listenerEnd[0], listenerEnd[1] / 1000000)
                 PerpetualV1.removeAllListeners();
                 process.exit(0);
             }
         } else {
-            console.log("Old event");
+            console.log("Old event from block:", eventBlock );
         }
     })
 
