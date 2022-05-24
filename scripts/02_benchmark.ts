@@ -111,7 +111,7 @@ async function main(numOps:number){
     perpListener.on("LogTrade", (...args:any[])=>{
         const eventBlock = args[12]["blockNumber"];
         // ignore events if belongs to block < head of the chain
-        if(eventBlock >= chainHead){
+        if(eventBlock > chainHead){
             // console.log(`Listener Event Count: ${++eventCount}`);
 
             // if event count is equal to number of trades
