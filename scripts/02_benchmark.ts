@@ -105,19 +105,28 @@ async function main(numOps:number){
     console.log("-> Chain head at: ", chainHead);
 
     let eventCount = 0;
-    var listenerStart = process.hrtime()
+    let listenerStart = process.hrtime()
+    let firstEventTime = process.hrtime();
 
     // event listener
     perpListener.on("LogTrade", (...args:any[])=>{
         const eventBlock = args[12]["blockNumber"];
         // ignore events if belongs to block < head of the chain
         if(eventBlock > chainHead){
-            // console.log(`Listener Event Count: ${++eventCount}`);
-
+            // console.log(`Listener Event Count: ${eventCount}`);
+            
+            // recieving first event, start timer
+            if(eventCount == 0){
+                firstEventTime = process.hrtime();
+            }
             // if event count is equal to number of trades
             if(++eventCount == numOps){
                 var listenerEnd = process.hrtime(listenerStart)
-                console.info('-> All Events Received Time: %ds %dms', listenerEnd[0], listenerEnd[1] / 1000000)
+                console.info('-> RPC Call to All Events Receive: %ds %dms', listenerEnd[0], listenerEnd[1] / 1000000)
+
+                var eventListenerEnd = process.hrtime(firstEventTime);
+                console.info('-> First to Last Event Receive: %ds %dms', eventListenerEnd[0], eventListenerEnd[1] / 1000000)
+
                 PerpetualV1.removeAllListeners();
                 process.exit(0);
             }
