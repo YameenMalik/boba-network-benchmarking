@@ -113,7 +113,7 @@ async function main(numOps:number){
         const eventBlock = args[12]["blockNumber"];
         // ignore events if belongs to block < head of the chain
         if(eventBlock > chainHead){
-            // console.log(`Listener Event Count: ${eventCount}`);
+            console.log(`Listener Event Count: ${eventCount}`);
             
             // recieving first event, start timer
             if(eventCount == 0){
