@@ -107,12 +107,16 @@ async function main(numOps:number, numTradePairs:number){
     while(i < numOps){    
         const settlementRequest = await generateOrdersWithSettlementSize(orderSigner, accounts, numTradePairs);
         const transformedOrder = transformRawOrderTx(settlementRequest.order, orderSigner);
+
+        // wait for 3 sec to give time to event listener to be established
+        await delay(3000);
     
         const tx = TASK(wallets[i], transformedOrder.accounts, transformedOrder.trades);  
         try {
             const resp = await((await tx).wait());        
             console.log("%d trade pairs used %d gas unit against a limit of %d", numTradePairs, +resp.gasUsed, gasLimit);    
         } catch(ex) {
+            console.error(ex)
             console.log("on chain revert triggered");
         }
         i++;
