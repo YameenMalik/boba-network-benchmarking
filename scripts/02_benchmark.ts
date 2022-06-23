@@ -61,7 +61,6 @@ let accounts = [
 // Write the contract call for which to BENCHMARK the chain
 const TASK = async (wallet: Wallet, accounts:string[], trades:Trade[]) => {
     const gasLimit = (await provider.getBlock('latest')).gasLimit
-    console.log("provider gas limit = " + gasLimit)
     return PerpetualV1.connect(wallet).trade(accounts, trades, {gasLimit:gasLimit})
 };
 
@@ -111,31 +110,31 @@ async function main(numOps:number){
     let firstEventTime = process.hrtime();
 
     // event listener
-    // perpListener.on("LogTrade", (...args:any[])=>{
-    //     const eventBlock = args[12]["blockNumber"];
-    //     // ignore events if belongs to block < head of the chain
-    //     if(eventBlock > chainHead){
-    //         console.log(`Listener Event Count: ${eventCount}`);
+    perpListener.on("LogTrade", (...args:any[])=>{
+        const eventBlock = args[12]["blockNumber"];
+        // ignore events if belongs to block < head of the chain
+        if(eventBlock > chainHead){
+            console.log(`Listener Event Count: ${eventCount}`);
             
-    //         // recieving first event, start timer
-    //         if(eventCount == 0){
-    //             firstEventTime = process.hrtime();
-    //         }
-    //         // if event count is equal to number of trades
-    //         if(++eventCount == numOps){
-    //             var listenerEnd = process.hrtime(listenerStart)
-    //             console.info('-> RPC Call to All Events Receive: %ds %dms', listenerEnd[0], listenerEnd[1] / 1000000)
+            // recieving first event, start timer
+            if(eventCount == 0){
+                firstEventTime = process.hrtime();
+            }
+            // if event count is equal to number of trades
+            if(++eventCount == numOps){
+                var listenerEnd = process.hrtime(listenerStart)
+                console.info('-> RPC Call to All Events Receive: %ds %dms', listenerEnd[0], listenerEnd[1] / 1000000)
 
-    //             var eventListenerEnd = process.hrtime(firstEventTime);
-    //             console.info('-> First to Last Event Receive: %ds %dms', eventListenerEnd[0], eventListenerEnd[1] / 1000000)
+                var eventListenerEnd = process.hrtime(firstEventTime);
+                console.info('-> First to Last Event Receive: %ds %dms', eventListenerEnd[0], eventListenerEnd[1] / 1000000)
 
-    //             PerpetualV1.removeAllListeners();
-    //             process.exit(0);
-    //         }
-    //     } else {
-    //         console.log("Old event from block:", eventBlock );
-    //     }
-    // })
+                PerpetualV1.removeAllListeners();
+                process.exit(0);
+            }
+        } else {
+            console.log("Old event from block:", eventBlock );
+        }
+    })
 
 
 
