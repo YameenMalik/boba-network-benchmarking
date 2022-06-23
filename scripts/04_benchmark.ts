@@ -61,7 +61,6 @@ let accounts = [
 const TASK = async (wallet: Wallet, accounts:string[], trades:Trade[]) => {
     // PerpetualV1.connect(wallet).estimateGas.trade(accounts, trades);
     const gasLimit = (await provider.getBlock('latest')).gasLimit
-    console.log("provider gas limit = " + gasLimit)
     return PerpetualV1.connect(wallet).trade(accounts, trades, {gasLimit: gasLimit})
 };
 
@@ -82,13 +81,7 @@ const POST_TASK = async () => {
 const delay = (ms:number) => new Promise(resolve => setTimeout(resolve, ms))
 
 
-async function main(numOrdersToSettle:number){
-
-    if(numOrdersToSettle <= 0) {
-        console.error("Error: number of orders to include in settlement should be a positive number")
-        process.exit(1)
-    }
-
+async function main(){
     const orderSigner = new OrderSigner(
         w3,
         "Orders",
@@ -107,78 +100,24 @@ async function main(numOrdersToSettle:number){
         return new Wallet(key, provider);
     })
 
-    console.log("-> Number of wallets:", numWallets);
-
-    const chainHead = +await provider.getBlockNumber();
-    console.log("-> Chain head at: ", chainHead);
-
-    let eventCount = 0;
-    let listenerStart = process.hrtime()
-    let firstEventTime = process.hrtime();
-
-    // event listener
-    // perpListener.on("LogTrade", (...args:any[])=>{
-    //     const eventBlock = args[12]["blockNumber"];
-    //     // ignore events if belongs to block < head of the chain
-    //     if(eventBlock > chainHead){
-    //         console.log(`Listener Event Count: ${eventCount}`);
-            
-    //         // recieving first event, start timer
-    //         if(eventCount == 0){
-    //             firstEventTime = process.hrtime();
-    //         }
-    //         // if event count is equal to number of trades
-    //         if(++eventCount > 0){
-    //             var listenerEnd = process.hrtime(listenerStart)
-    //             console.info('-> RPC Call to All Events Receive: %ds %dms', listenerEnd[0], listenerEnd[1] / 1000000)
-
-    //             var eventListenerEnd = process.hrtime(firstEventTime);
-    //             console.info('-> First to Last Event Receive: %ds %dms', eventListenerEnd[0], eventListenerEnd[1] / 1000000)
-
-    //             PerpetualV1.removeAllListeners();
-    //             process.exit(0);
-    //         }
-    //     } else {
-    //         console.log("Old event from block:", eventBlock );
-    //     }
-    // })    
-
-    const settlementRequest = await generateOrdersWithSettlementSize(orderSigner, accounts, numOrdersToSettle);
-    const transformedOrder = transformRawOrderTx(settlementRequest.order, orderSigner);
-
-    // wait for 3 sec to give time to event listener to be established
-    await delay(3000);
-
-    console.log("### Performing Pre-Tasks ###");
-    await PRE_TASK();
-
-    console.log("### Executing batch transactions ###")
-
-    // start time
-    var start = process.hrtime()
-
-    listenerStart = process.hrtime();
-    const tx = TASK(wallets[0], transformedOrder.accounts, transformedOrder.trades);  
-    const resp = await((await tx).wait());
+    let tradePairs:number = 1;
+    while(tradePairs < 256) {
+        const settlementRequest = await generateOrdersWithSettlementSize(orderSigner, accounts, tradePairs);
+        const transformedOrder = transformRawOrderTx(settlementRequest.order, orderSigner);
+        
+        await PRE_TASK();    
     
-    // console.log(resp);
-    console.log(+resp.gasUsed); // + sign used to convert big number to number
-    // console.log(resp);
-    
-    var end = process.hrtime(start)
+        const tx = TASK(wallets[0], transformedOrder.accounts, transformedOrder.trades);  
+        const resp = await((await tx).wait());        
+        const gasLimit = (await provider.getBlock('latest')).gasLimit
+        console.log("%d trade pairs used %d gas unit against a limit of %d", tradePairs, +resp.gasUsed, gasLimit);
+        
+        await POST_TASK();    
 
-    console.info('-> RPC call response time: %ds %dms', end[0], end[1] / 1000000)
-
-    console.log("### Performing Post-Tasks ###");
-
-    await POST_TASK();
-
+        tradePairs = tradePairs * 2;
+    }
 }
 
 if (require.main === module) {
-    if(process.argv.length != 3){
-        console.error("Error: Provide the number of orders to include in settlement: yarn benchmark <num_orders>")
-        process.exit(1)
-    }
-    main(Number(process.argv[2]));
+    main();
 }
