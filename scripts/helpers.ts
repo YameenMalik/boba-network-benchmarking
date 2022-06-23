@@ -168,7 +168,6 @@ export async function generateOrdersWithSettlementSize(
     amount: settlementQueueSize,
     isBuy: false
   } as TestOrder);
-  console.log("maker order" + makerOrder);
 
   const ordersToSettle: OrdersToSettle[] = [];
   while (--settlementQueueSize >= 0) {

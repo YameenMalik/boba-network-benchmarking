@@ -60,7 +60,9 @@ let accounts = [
 // Write the contract call for which to BENCHMARK the chain
 const TASK = async (wallet: Wallet, accounts:string[], trades:Trade[]) => {
     // PerpetualV1.connect(wallet).estimateGas.trade(accounts, trades);
-    return PerpetualV1.connect(wallet).trade(accounts, trades, {gasLimit: 11_000_000})
+    const gasLimit = (await provider.getBlock('latest')).gasLimit
+    console.log("provider gas limit = " + gasLimit)
+    return PerpetualV1.connect(wallet).trade(accounts, trades, {gasLimit: gasLimit})
 };
 
 // Write any pre-task to be executed BEFORE running the TASK
@@ -81,9 +83,6 @@ const delay = (ms:number) => new Promise(resolve => setTimeout(resolve, ms))
 
 
 async function main(numOrdersToSettle:number){
-
-    // var block = await provider.getBlock('latest');
-    // console.log("gasLimit: " + block.gasLimit);
 
     if(numOrdersToSettle <= 0) {
         console.error("Error: number of orders to include in settlement should be a positive number")
@@ -163,7 +162,7 @@ async function main(numOrdersToSettle:number){
     const resp = await((await tx).wait());
     
     // console.log(resp);
-    console.log(+resp.gasUsed);
+    console.log(+resp.gasUsed); // + sign used to convert big number to number
     // console.log(resp);
     
     var end = process.hrtime(start)

@@ -61,7 +61,9 @@ let accounts = [
 
 // Write the contract call for which to BENCHMARK the chain
 const TASK = async (wallet: Wallet, accounts:string[], trades:Trade[]) => {
-    return PerpetualV1.connect(wallet).trade(accounts, trades, {gasLimit:10000000})
+    const gasLimit = (await provider.getBlock('latest')).gasLimit
+    console.log("provider gas limit = " + gasLimit)
+    return PerpetualV1.connect(wallet).trade(accounts, trades, {gasLimit:gasLimit})
 };
 
 // Write any pre-task to be executed BEFORE running the TASK
