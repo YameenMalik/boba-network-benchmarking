@@ -96,23 +96,26 @@ async function main(numOps:number, numTradePairs:number){
           
     const walletsPvtKeys = JSON.parse(fs.readFileSync(walletsPath) as any);
     const numWallets: number = walletsPvtKeys.length;
+    numOps = Math.min(numWallets, numOps);
     const wallets: Wallet[] = walletsPvtKeys.map((key: string) => {
         return new Wallet(key, provider);
     })
-
-    const gasLimit = (await provider.getBlock('latest')).gasLimit
-    const settlementRequest = await generateOrdersWithSettlementSize(orderSigner, accounts, numTradePairs);
-    const transformedOrder = transformRawOrderTx(settlementRequest.order, orderSigner);
-    
+    const gasLimit = (await provider.getBlock('latest')).gasLimit    
     await PRE_TASK();    
 
     let i = 0;
-    const tx = TASK(wallets[0], transformedOrder.accounts, transformedOrder.trades);  
-    try {
-        const resp = await((await tx).wait());        
-        console.log("%d trade pairs used %d gas unit against a limit of %d", numTradePairs, +resp.gasUsed, gasLimit);    
-    } catch(ex) {
-        console.log("on chain revert triggered");
+    while(i < numOps){    
+        const settlementRequest = await generateOrdersWithSettlementSize(orderSigner, accounts, numTradePairs);
+        const transformedOrder = transformRawOrderTx(settlementRequest.order, orderSigner);
+    
+        const tx = TASK(wallets[i], transformedOrder.accounts, transformedOrder.trades);  
+        try {
+            const resp = await((await tx).wait());        
+            console.log("%d trade pairs used %d gas unit against a limit of %d", numTradePairs, +resp.gasUsed, gasLimit);    
+        } catch(ex) {
+            console.log("on chain revert triggered");
+        }
+        i++;
     }
 
     await POST_TASK();    
