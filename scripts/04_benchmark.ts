@@ -127,7 +127,7 @@ async function main(numOps:number, numTradePairs:number){
 
 if (require.main === module) {
     if(process.argv.length != 4){
-        console.error("Error: Provide the number of operations to be performed: yarn benchmark <num_ops>")
+        console.error("Error: Provide the number of operations to be performed and number of trades per operation: yarn benchmark <num_ops> <num_trades>")
         process.exit(1)
     }
 

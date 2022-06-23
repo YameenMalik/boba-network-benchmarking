@@ -17,23 +17,22 @@ config({ path: ".env" });
 
 
 // BOBA MOONBASE
-const perpetualV1Address = "0x52d92ebBe4122d8Ed5394819d302AD234001D2C7"; // address of smart contract 
-const ordersAddress = "0x36AAc8c385E5FA42F6A7F62Ee91b5C2D813C451C"; // address of smart contract
-
+const perpetualV1Address = "0x52d92ebBe4122d8Ed5394819d302AD234001D2C7";
+const ordersAddress = "0x36AAc8c385E5FA42F6A7F62Ee91b5C2D813C451C";
 
 // ARBITRUM
 // const perpetualV1Address = "0x4fe5cCC36975DA9Ea03b302B118a6be3455F3153";
 // const ordersAddress = "0x905e24367781c232E673cF5F6AE119cA0D061c29";
 
 
-const walletsPath = `${__dirname}/wallets.json`; // list of wallets
+const walletsPath = `${__dirname}/wallets.json`;
 
-const w3 = new Web3(process.env.RPC_URL as string); // web3 is a programmatic way of interacting with the blockchain nodes
+const w3 = new Web3(process.env.RPC_URL as string);
 const provider = new ethers.providers.JsonRpcProvider(process.env.BOBA_MOONBASE_URL as string);
-const faucet = new Wallet(process.env.DEPLOYER_PRIVATE_KEY as string, provider);  // signs transactions using a private key
+const faucet = new Wallet(process.env.DEPLOYER_PRIVATE_KEY as string, provider);
 
 const perpetualV1Factory = new orderbook.PerpetualV1__factory(faucet);
-const PerpetualV1 = perpetualV1Factory.attach(perpetualV1Address); // this is the contract
+const PerpetualV1 = perpetualV1Factory.attach(perpetualV1Address);
 
 let currentPositionSize:number = 0;
 
@@ -162,7 +161,7 @@ async function main(numOps:number){
     // start time
     var start = process.hrtime()
 
-    // const waits = []
+    const waits = []
     let i = 0;
     while(i < numOps){
         
@@ -171,11 +170,12 @@ async function main(numOps:number){
             listenerStart = process.hrtime();
         }
 
-        const wait = TASK(wallets[i], transformedOrders[i].accounts, transformedOrders[i].trades);
-        await (await wait).wait();
+        waits.push(TASK(wallets[i], transformedOrders[i].accounts, transformedOrders[i].trades));
+        // const wait = TASK(wallets[i], transformedOrders[i].accounts, transformedOrders[i].trades);
+        // await (await wait).wait();
         i++;
     }
-    // await Promise.all(waits);
+    await Promise.all(waits);
   
     // stop time
     var end = process.hrtime(start)
