@@ -7,6 +7,7 @@ import { orderbook } from "@dtradeorg/dtrade-ts/abi";
 import { Orders as OrderSigner } from "@dtradeorg/dtrade-ts/abi/orderbook-lib/";
 import { generateOrdersWithSettlementSize, transformRawOrderTx, toBigNumber } from "./helpers";
 import { Trade } from "./types";
+import { exit } from "yargs";
 config({ path: ".env" });
 
 
@@ -59,7 +60,6 @@ let accounts = [
 
 // Write the contract call for which to BENCHMARK the chain
 const TASK = async (wallet: Wallet, accounts:string[], trades:Trade[]) => {
-    // PerpetualV1.connect(wallet).estimateGas.trade(accounts, trades);
     const gasLimit = (await provider.getBlock('latest')).gasLimit
     return PerpetualV1.connect(wallet).trade(accounts, trades, {gasLimit: gasLimit})
 };
@@ -81,7 +81,7 @@ const POST_TASK = async () => {
 const delay = (ms:number) => new Promise(resolve => setTimeout(resolve, ms))
 
 
-async function main(){
+async function main(numOps:number, numTradePairs:number){
     const orderSigner = new OrderSigner(
         w3,
         "Orders",
@@ -100,24 +100,29 @@ async function main(){
         return new Wallet(key, provider);
     })
 
-    let tradePairs:number = 1;
-    while(tradePairs < 256) {
-        const settlementRequest = await generateOrdersWithSettlementSize(orderSigner, accounts, tradePairs);
-        const transformedOrder = transformRawOrderTx(settlementRequest.order, orderSigner);
-        
-        await PRE_TASK();    
+    const gasLimit = (await provider.getBlock('latest')).gasLimit
+    const settlementRequest = await generateOrdersWithSettlementSize(orderSigner, accounts, numTradePairs);
+    const transformedOrder = transformRawOrderTx(settlementRequest.order, orderSigner);
     
-        const tx = TASK(wallets[0], transformedOrder.accounts, transformedOrder.trades);  
-        const resp = await((await tx).wait());        
-        const gasLimit = (await provider.getBlock('latest')).gasLimit
-        console.log("%d trade pairs used %d gas unit against a limit of %d", tradePairs, +resp.gasUsed, gasLimit);
-        
-        await POST_TASK();    
+    await PRE_TASK();    
 
-        tradePairs = tradePairs * 2;
+    let i = 0;
+    const tx = TASK(wallets[0], transformedOrder.accounts, transformedOrder.trades);  
+    try {
+        const resp = await((await tx).wait());        
+        console.log("%d trade pairs used %d gas unit against a limit of %d", numTradePairs, +resp.gasUsed, gasLimit);    
+    } catch(ex) {
+        console.log("on chain revert triggered");
     }
+
+    await POST_TASK();    
 }
 
 if (require.main === module) {
-    main();
+    if(process.argv.length != 4){
+        console.error("Error: Provide the number of operations to be performed: yarn benchmark <num_ops>")
+        process.exit(1)
+    }
+
+    main(Number(process.argv[2]), Number(process.argv[3]));
 }
