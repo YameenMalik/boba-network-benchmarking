@@ -189,7 +189,7 @@ export async function generateOrdersWithSettlementSize(
 
   return {
     msgType: SettlementQueueMessageTypes.SETTLE,
-    matchCount: 1,
+    matchCount: settlementQueueSize,
     order: ordersToSettle
   };
 }

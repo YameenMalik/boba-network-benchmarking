@@ -15,9 +15,10 @@ config({ path: ".env" });
 // const perpetualV1Address = "0xE7f98A11D8B7870ceF9243b9153B5e18d2f2dA4e";
 // const ordersAddress = "0xb89A6553423863466f95f12066443ad811898B3c";
 
+
 // BOBA MOONBASE
-const perpetualV1Address = "0x52d92ebBe4122d8Ed5394819d302AD234001D2C7";
-const ordersAddress = "0x36AAc8c385E5FA42F6A7F62Ee91b5C2D813C451C";
+const perpetualV1Address = "0x52d92ebBe4122d8Ed5394819d302AD234001D2C7"; // address of smart contract 
+const ordersAddress = "0x36AAc8c385E5FA42F6A7F62Ee91b5C2D813C451C"; // address of smart contract
 
 
 // ARBITRUM
@@ -25,14 +26,15 @@ const ordersAddress = "0x36AAc8c385E5FA42F6A7F62Ee91b5C2D813C451C";
 // const ordersAddress = "0x905e24367781c232E673cF5F6AE119cA0D061c29";
 
 
-const walletsPath = `${__dirname}/wallets.json`;
+const walletsPath = `${__dirname}/wallets.json`; // list of wallets
 
-const w3 = new Web3(process.env.RPC_URL as string);
+const w3 = new Web3(process.env.RPC_URL as string); // web3 is a programmatic way of interacting with the blockchain nodes
 const provider = new ethers.providers.JsonRpcProvider(process.env.BOBA_MOONBASE_URL as string);
-const faucet = new Wallet(process.env.DEPLOYER_PRIVATE_KEY as string, provider); 
+const faucet = new Wallet(process.env.DEPLOYER_PRIVATE_KEY as string, provider);  // signs transactions using a private key
 
 const perpetualV1Factory = new orderbook.PerpetualV1__factory(faucet);
-const PerpetualV1 = perpetualV1Factory.attach(perpetualV1Address);
+const PerpetualV1 = perpetualV1Factory.attach(perpetualV1Address); // this is the contract
+
 let currentPositionSize:number = 0;
 
 
@@ -59,7 +61,7 @@ let accounts = [
 
 // Write the contract call for which to BENCHMARK the chain
 const TASK = async (wallet: Wallet, accounts:string[], trades:Trade[]) => {
-    return PerpetualV1.connect(wallet).trade(accounts, trades)
+    return PerpetualV1.connect(wallet).trade(accounts, trades, {gasLimit:10000000})
 };
 
 // Write any pre-task to be executed BEFORE running the TASK
@@ -67,7 +69,6 @@ const PRE_TASK = async () => {
     const balance = await PerpetualV1.getAccountPositionBalance(accounts[0].address);
     currentPositionSize = Number(new BigNumber(balance.size.toHexString()).toFixed(0))/1e18;
     console.log("-> Initial Position Size: ", currentPositionSize);
-
 };
 
 // Write any post-tasks to be executed AFTER running the TASK
@@ -85,7 +86,7 @@ async function main(numOps:number){
     const orderSigner = new OrderSigner(
         w3,
         "Orders",
-        await (await provider.getNetwork()).chainId,
+        (await provider.getNetwork()).chainId,
         ordersAddress
       );
 
@@ -109,42 +110,42 @@ async function main(numOps:number){
     let firstEventTime = process.hrtime();
 
     // event listener
-    perpListener.on("LogTrade", (...args:any[])=>{
-        const eventBlock = args[12]["blockNumber"];
-        // ignore events if belongs to block < head of the chain
-        if(eventBlock > chainHead){
-            console.log(`Listener Event Count: ${eventCount}`);
+    // perpListener.on("LogTrade", (...args:any[])=>{
+    //     const eventBlock = args[12]["blockNumber"];
+    //     // ignore events if belongs to block < head of the chain
+    //     if(eventBlock > chainHead){
+    //         console.log(`Listener Event Count: ${eventCount}`);
             
-            // recieving first event, start timer
-            if(eventCount == 0){
-                firstEventTime = process.hrtime();
-            }
-            // if event count is equal to number of trades
-            if(++eventCount == numOps){
-                var listenerEnd = process.hrtime(listenerStart)
-                console.info('-> RPC Call to All Events Receive: %ds %dms', listenerEnd[0], listenerEnd[1] / 1000000)
+    //         // recieving first event, start timer
+    //         if(eventCount == 0){
+    //             firstEventTime = process.hrtime();
+    //         }
+    //         // if event count is equal to number of trades
+    //         if(++eventCount == numOps){
+    //             var listenerEnd = process.hrtime(listenerStart)
+    //             console.info('-> RPC Call to All Events Receive: %ds %dms', listenerEnd[0], listenerEnd[1] / 1000000)
 
-                var eventListenerEnd = process.hrtime(firstEventTime);
-                console.info('-> First to Last Event Receive: %ds %dms', eventListenerEnd[0], eventListenerEnd[1] / 1000000)
+    //             var eventListenerEnd = process.hrtime(firstEventTime);
+    //             console.info('-> First to Last Event Receive: %ds %dms', eventListenerEnd[0], eventListenerEnd[1] / 1000000)
 
-                PerpetualV1.removeAllListeners();
-                process.exit(0);
-            }
-        } else {
-            console.log("Old event from block:", eventBlock );
-        }
-    })
+    //             PerpetualV1.removeAllListeners();
+    //             process.exit(0);
+    //         }
+    //     } else {
+    //         console.log("Old event from block:", eventBlock );
+    //     }
+    // })
 
 
 
     // add accounts to w3
-    await accounts.map((acct) => {
+    accounts.map((acct) => {
         w3.eth.accounts.wallet.add(acct.privateKey);
     });
     
 
     const requests = await generateOrders(orderSigner, accounts, numOps);
-    const transformedOrders =   await requests.map(r => {
+    const transformedOrders = requests.map(r => {
         return transformRawOrderTx(r.order, orderSigner);
     });
 
@@ -159,7 +160,7 @@ async function main(numOps:number){
     // start time
     var start = process.hrtime()
 
-    const waits = []
+    // const waits = []
     let i = 0;
     while(i < numOps){
         
@@ -168,10 +169,11 @@ async function main(numOps:number){
             listenerStart = process.hrtime();
         }
 
-        waits.push(TASK(wallets[i], transformedOrders[i].accounts, transformedOrders[i].trades));
+        const wait = TASK(wallets[i], transformedOrders[i].accounts, transformedOrders[i].trades);
+        await (await wait).wait();
         i++;
     }
-    await Promise.all(waits);
+    // await Promise.all(waits);
   
     // stop time
     var end = process.hrtime(start)

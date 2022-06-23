@@ -59,7 +59,8 @@ let accounts = [
 
 // Write the contract call for which to BENCHMARK the chain
 const TASK = async (wallet: Wallet, accounts:string[], trades:Trade[]) => {
-    return PerpetualV1.connect(wallet).trade(accounts, trades)
+    // PerpetualV1.connect(wallet).estimateGas.trade(accounts, trades);
+    return PerpetualV1.connect(wallet).trade(accounts, trades, {gasLimit: 11_000_000})
 };
 
 // Write any pre-task to be executed BEFORE running the TASK
@@ -80,6 +81,9 @@ const delay = (ms:number) => new Promise(resolve => setTimeout(resolve, ms))
 
 
 async function main(numOrdersToSettle:number){
+
+    // var block = await provider.getBlock('latest');
+    // console.log("gasLimit: " + block.gasLimit);
 
     if(numOrdersToSettle <= 0) {
         console.error("Error: number of orders to include in settlement should be a positive number")
@@ -114,31 +118,31 @@ async function main(numOrdersToSettle:number){
     let firstEventTime = process.hrtime();
 
     // event listener
-    perpListener.on("LogTrade", (...args:any[])=>{
-        const eventBlock = args[12]["blockNumber"];
-        // ignore events if belongs to block < head of the chain
-        if(eventBlock > chainHead){
-            console.log(`Listener Event Count: ${eventCount}`);
+    // perpListener.on("LogTrade", (...args:any[])=>{
+    //     const eventBlock = args[12]["blockNumber"];
+    //     // ignore events if belongs to block < head of the chain
+    //     if(eventBlock > chainHead){
+    //         console.log(`Listener Event Count: ${eventCount}`);
             
-            // recieving first event, start timer
-            if(eventCount == 0){
-                firstEventTime = process.hrtime();
-            }
-            // if event count is equal to number of trades
-            if(++eventCount > 0){
-                var listenerEnd = process.hrtime(listenerStart)
-                console.info('-> RPC Call to All Events Receive: %ds %dms', listenerEnd[0], listenerEnd[1] / 1000000)
+    //         // recieving first event, start timer
+    //         if(eventCount == 0){
+    //             firstEventTime = process.hrtime();
+    //         }
+    //         // if event count is equal to number of trades
+    //         if(++eventCount > 0){
+    //             var listenerEnd = process.hrtime(listenerStart)
+    //             console.info('-> RPC Call to All Events Receive: %ds %dms', listenerEnd[0], listenerEnd[1] / 1000000)
 
-                var eventListenerEnd = process.hrtime(firstEventTime);
-                console.info('-> First to Last Event Receive: %ds %dms', eventListenerEnd[0], eventListenerEnd[1] / 1000000)
+    //             var eventListenerEnd = process.hrtime(firstEventTime);
+    //             console.info('-> First to Last Event Receive: %ds %dms', eventListenerEnd[0], eventListenerEnd[1] / 1000000)
 
-                PerpetualV1.removeAllListeners();
-                process.exit(0);
-            }
-        } else {
-            console.log("Old event from block:", eventBlock );
-        }
-    })    
+    //             PerpetualV1.removeAllListeners();
+    //             process.exit(0);
+    //         }
+    //     } else {
+    //         console.log("Old event from block:", eventBlock );
+    //     }
+    // })    
 
     const settlementRequest = await generateOrdersWithSettlementSize(orderSigner, accounts, numOrdersToSettle);
     const transformedOrder = transformRawOrderTx(settlementRequest.order, orderSigner);
@@ -155,7 +159,13 @@ async function main(numOrdersToSettle:number){
     var start = process.hrtime()
 
     listenerStart = process.hrtime();
-    TASK(wallets[0], transformedOrder.accounts, transformedOrder.trades);  
+    const tx = TASK(wallets[0], transformedOrder.accounts, transformedOrder.trades);  
+    const resp = await((await tx).wait());
+    
+    // console.log(resp);
+    console.log(+resp.gasUsed);
+    // console.log(resp);
+    
     var end = process.hrtime(start)
 
     console.info('-> RPC call response time: %ds %dms', end[0], end[1] / 1000000)
