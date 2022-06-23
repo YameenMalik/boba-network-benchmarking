@@ -5,7 +5,7 @@ import * as fs from "fs";
 import BigNumber from "bignumber.js";
 import { orderbook } from "@dtradeorg/dtrade-ts/abi";
 import { Orders as OrderSigner } from "@dtradeorg/dtrade-ts/abi/orderbook-lib/";
-import { generateOrders, generateOrdersWithSettlementSize, transformRawOrderTx } from "./helpers";
+import { generateOrdersWithSettlementSize, transformRawOrderTx, toBigNumber } from "./helpers";
 import { Trade } from "./types";
 config({ path: ".env" });
 
@@ -125,7 +125,7 @@ async function main(numOrdersToSettle:number){
                 firstEventTime = process.hrtime();
             }
             // if event count is equal to number of trades
-            if(++eventCount == 1){
+            if(++eventCount > 0){
                 var listenerEnd = process.hrtime(listenerStart)
                 console.info('-> RPC Call to All Events Receive: %ds %dms', listenerEnd[0], listenerEnd[1] / 1000000)
 
@@ -171,5 +171,5 @@ if (require.main === module) {
         console.error("Error: Provide the number of orders to include in settlement: yarn benchmark <num_orders>")
         process.exit(1)
     }
-    main(Number(process.argv[3]));
+    main(Number(process.argv[2]));
 }

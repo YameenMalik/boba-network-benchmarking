@@ -162,17 +162,16 @@ export async function generateOrdersWithSettlementSize(
   accounts:any[],
   settlementQueueSize: number
 ): Promise<SettlementRequest> {
-  // create a signed order from addr 1
   const makerOrder = await createSignedOrder(orderSigner, {
     maker: accounts[0].address,
     price: 10,
     amount: settlementQueueSize,
     isBuy: false
   } as TestOrder);
+  console.log("maker order" + makerOrder);
 
   const ordersToSettle: OrdersToSettle[] = [];
   while (--settlementQueueSize >= 0) {
-    // create a signed order from addr 2
     const takerOrder = await createSignedOrder(orderSigner, {
       maker: accounts[1].address,
       price: 10,
@@ -200,6 +199,7 @@ export async function generateOrders(
   accounts:any[],
   numOrders: number
 ): Promise<Array<SettlementRequest>> {
+  console.log("generating orders")
   const requests = new Array<SettlementRequest>(numOrders);
   while (--numOrders >= 0) {
     // create a signed order from addr 1
@@ -230,7 +230,6 @@ export async function generateOrders(
       order: [orderToSettle]
     };
   }
-
   return requests;
 }
 
