@@ -155,49 +155,82 @@ export async function createSignedOrder(
     });
   
     return orderbookOrder;
+}
+
+export async function generateOrdersWithSettlementSize(
+  orderSigner:OrderSigner,
+  accounts:any[],
+  settlementQueueSize: number
+): Promise<SettlementRequest> {
+  const makerOrder = await createSignedOrder(orderSigner, {
+    maker: accounts[0].address,
+    price: 10,
+    amount: settlementQueueSize,
+    isBuy: false
+  } as TestOrder);
+
+  const ordersToSettle: OrdersToSettle[] = [];
+  while (--settlementQueueSize >= 0) {
+    const takerOrder = await createSignedOrder(orderSigner, {
+      maker: accounts[1].address,
+      price: 10,
+      amount: 1,
+      isBuy: true
+    } as TestOrder)
+
+    ordersToSettle.push({
+        makerOrder: makerOrder,
+        takerOrder: takerOrder,
+        amountToFill: toBigNumberStr(1)
+      } as OrdersToSettle
+    );
   }
 
+  return {
+    msgType: SettlementQueueMessageTypes.SETTLE,
+    matchCount: settlementQueueSize,
+    order: ordersToSettle
+  };
+}
 
 export async function generateOrders(
-    orderSigner:OrderSigner,
-    accounts:any[],
-    numOrders: number
-  ): Promise<Array<SettlementRequest>> {
-    const requests = new Array<SettlementRequest>(numOrders);
-    while (--numOrders >= 0) {
-      // create a signed order from addr 1
-      const o1 = await createSignedOrder(orderSigner, {
-        maker: accounts[0].address,
-        price: 10,
-        amount: 1,
-        isBuy: false
-      } as TestOrder);
-  
-      // create a signed order from addr 2
-      const o2 = await createSignedOrder(orderSigner, {
-        maker: accounts[1].address,
-        price: 10,
-        amount: 1,
-        isBuy: true
-      } as TestOrder);
-  
-      const orderToSettle = {
-        makerOrder: o1,
-        takerOrder: o2,
-        amountToFill: toBigNumberStr(1)
-      } as OrdersToSettle;
-  
-      requests[numOrders] = {
-        msgType: SettlementQueueMessageTypes.SETTLE,
-        matchCount: 1,
-        order: [orderToSettle]
-      };
-    }
-  
-    return requests;
+  orderSigner:OrderSigner,
+  accounts:any[],
+  numOrders: number
+): Promise<Array<SettlementRequest>> {
+  console.log("generating orders")
+  const requests = new Array<SettlementRequest>(numOrders);
+  while (--numOrders >= 0) {
+    // create a signed order from addr 1
+    const o1 = await createSignedOrder(orderSigner, {
+      maker: accounts[0].address,
+      price: 10,
+      amount: 1,
+      isBuy: false
+    } as TestOrder);
+
+    // create a signed order from addr 2
+    const o2 = await createSignedOrder(orderSigner, {
+      maker: accounts[1].address,
+      price: 10,
+      amount: 1,
+      isBuy: true
+    } as TestOrder);
+
+    const orderToSettle = {
+      makerOrder: o1,
+      takerOrder: o2,
+      amountToFill: toBigNumberStr(1)
+    } as OrdersToSettle;
+
+    requests[numOrders] = {
+      msgType: SettlementQueueMessageTypes.SETTLE,
+      matchCount: 1,
+      order: [orderToSettle]
+    };
   }
-
-
+  return requests;
+}
 
 export function transformRawOrderTx(txs: OrdersToSettle[], orderSigner:OrderSigner) {
   

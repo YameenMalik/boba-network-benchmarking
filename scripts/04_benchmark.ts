@@ -5,8 +5,9 @@ import * as fs from "fs";
 import BigNumber from "bignumber.js";
 import { orderbook } from "@dtradeorg/dtrade-ts/abi";
 import { Orders as OrderSigner } from "@dtradeorg/dtrade-ts/abi/orderbook-lib/";
-import { generateOrders, transformRawOrderTx } from "./helpers";
+import { generateOrdersWithSettlementSize, transformRawOrderTx, toBigNumber } from "./helpers";
 import { Trade } from "./types";
+import { exit } from "yargs";
 config({ path: ".env" });
 
 
@@ -15,10 +16,10 @@ config({ path: ".env" });
 // const perpetualV1Address = "0xE7f98A11D8B7870ceF9243b9153B5e18d2f2dA4e";
 // const ordersAddress = "0xb89A6553423863466f95f12066443ad811898B3c";
 
-
 // BOBA MOONBASE
-const perpetualV1Address = "0x52d92ebBe4122d8Ed5394819d302AD234001D2C7";
+const perpetualV1Address = "0x52d92ebBe4122d8Ed5394819d302AD234001D2C7"; // this is the address of the deployed contract
 const ordersAddress = "0x36AAc8c385E5FA42F6A7F62Ee91b5C2D813C451C";
+
 
 // ARBITRUM
 // const perpetualV1Address = "0x4fe5cCC36975DA9Ea03b302B118a6be3455F3153";
@@ -29,11 +30,10 @@ const walletsPath = `${__dirname}/wallets.json`;
 
 const w3 = new Web3(process.env.RPC_URL as string);
 const provider = new ethers.providers.JsonRpcProvider(process.env.BOBA_MOONBASE_URL as string);
-const faucet = new Wallet(process.env.DEPLOYER_PRIVATE_KEY as string, provider);
+const faucet = new Wallet(process.env.DEPLOYER_PRIVATE_KEY as string, provider); 
 
 const perpetualV1Factory = new orderbook.PerpetualV1__factory(faucet);
 const PerpetualV1 = perpetualV1Factory.attach(perpetualV1Address);
-
 let currentPositionSize:number = 0;
 
 
@@ -61,7 +61,7 @@ let accounts = [
 // Write the contract call for which to BENCHMARK the chain
 const TASK = async (wallet: Wallet, accounts:string[], trades:Trade[]) => {
     const gasLimit = (await provider.getBlock('latest')).gasLimit
-    return PerpetualV1.connect(wallet).trade(accounts, trades, {gasLimit:gasLimit})
+    return PerpetualV1.connect(wallet).trade(accounts, trades, {gasLimit: gasLimit})
 };
 
 // Write any pre-task to be executed BEFORE running the TASK
@@ -81,118 +81,55 @@ const POST_TASK = async () => {
 const delay = (ms:number) => new Promise(resolve => setTimeout(resolve, ms))
 
 
-async function main(numOps:number){
-
+async function main(numOps:number, numTradePairs:number){
     const orderSigner = new OrderSigner(
         w3,
         "Orders",
         (await provider.getNetwork()).chainId,
         ordersAddress
-      );
-
-      
-    const walletsPvtKeys = JSON.parse(fs.readFileSync(walletsPath) as any);
-    const numWallets: number = walletsPvtKeys.length;
-    const wallets: Wallet[] = walletsPvtKeys.map((key: string) => {
-        return new Wallet(key, provider);
-    })
-
-    console.log("-> Number of transactions to perform:", numOps);
-    console.log("-> Number of wallets:", numWallets);
-    numOps = Math.min(numWallets, numOps);
-    console.log("-> Performing operations:", numOps);
-
-    const chainHead = +await provider.getBlockNumber();
-    console.log("-> Chain head at: ", chainHead);
-
-    let eventCount = 0;
-    let listenerStart = process.hrtime()
-    let firstEventTime = process.hrtime();
-
-    // event listener
-    perpListener.on("LogTrade", (...args:any[])=>{
-        const eventBlock = args[12]["blockNumber"];
-        // ignore events if belongs to block < head of the chain
-        if(eventBlock > chainHead){
-            console.log(`Listener Event Count: ${eventCount}`);
-            
-            // recieving first event, start timer
-            if(eventCount == 0){
-                firstEventTime = process.hrtime();
-            }
-            // if event count is equal to number of trades
-            if(++eventCount == numOps){
-                var listenerEnd = process.hrtime(listenerStart)
-                console.info('-> RPC Call to All Events Receive: %ds %dms', listenerEnd[0], listenerEnd[1] / 1000000)
-
-                var eventListenerEnd = process.hrtime(firstEventTime);
-                console.info('-> First to Last Event Receive: %ds %dms', eventListenerEnd[0], eventListenerEnd[1] / 1000000)
-
-                PerpetualV1.removeAllListeners();
-                process.exit(0);
-            }
-        } else {
-            console.log("Old event from block:", eventBlock );
-        }
-    })
-
-
+    );
 
     // add accounts to w3
     accounts.map((acct) => {
         w3.eth.accounts.wallet.add(acct.privateKey);
     });
-    
+          
+    const walletsPvtKeys = JSON.parse(fs.readFileSync(walletsPath) as any);
+    const numWallets: number = walletsPvtKeys.length;
+    numOps = Math.min(numWallets, numOps);
+    const wallets: Wallet[] = walletsPvtKeys.map((key: string) => {
+        return new Wallet(key, provider);
+    })
+    const gasLimit = (await provider.getBlock('latest')).gasLimit    
+    await PRE_TASK();    
 
-    const requests = await generateOrders(orderSigner, accounts, numOps);
-    const transformedOrders = requests.map(r => {
-        return transformRawOrderTx(r.order, orderSigner);
-    });
-
-    // wait for 3 sec to give time to event listener to be established
-    await delay(3000);
-
-    console.log("### Performing Pre-Tasks ###");
-    await PRE_TASK();
-
-    console.log("### Executing batch transactions ###")
-
-    // start time
-    var start = process.hrtime()
-
-    const waits = []
     let i = 0;
-    while(i < numOps){
-        
-        // start listener start time the moment first contract call is made
-        if(i == 0){
-            listenerStart = process.hrtime();
-        }
+    while(i < numOps){    
+        const settlementRequest = await generateOrdersWithSettlementSize(orderSigner, accounts, numTradePairs);
+        const transformedOrder = transformRawOrderTx(settlementRequest.order, orderSigner);
 
-        waits.push(TASK(wallets[i], transformedOrders[i].accounts, transformedOrders[i].trades));
-        // const wait = TASK(wallets[i], transformedOrders[i].accounts, transformedOrders[i].trades);
-        // await (await wait).wait();
+        // wait for 3 sec to give time to event listener to be established
+        await delay(3000);
+    
+        const tx = TASK(wallets[i], transformedOrder.accounts, transformedOrder.trades);  
+        try {
+            const resp = await((await tx).wait());        
+            console.log("%d trade pairs used %d gas unit against a limit of %d", numTradePairs, +resp.gasUsed, gasLimit);    
+        } catch(ex) {
+            console.error(ex)
+            console.log("on chain revert triggered");
+        }
         i++;
     }
-    await Promise.all(waits);
-  
-    // stop time
-    var end = process.hrtime(start)
 
-
-    console.info('-> RPC call response time: %ds %dms', end[0], end[1] / 1000000)
-
-    console.log("### Performing Post-Tasks ###");
-
-    await POST_TASK();
-
+    await POST_TASK();    
 }
 
 if (require.main === module) {
-    if(process.argv.length != 3){
-        console.error("Error: Provide the number of operations to be performed: yarn benchmark <num_ops>")
+    if(process.argv.length != 4){
+        console.error("Error: Provide the number of operations to be performed and number of trades per operation: yarn benchmark <num_ops> <num_trades>")
         process.exit(1)
     }
 
-    main(Number(process.argv[2]));
-  }
+    main(Number(process.argv[2]), Number(process.argv[3]));
+}
