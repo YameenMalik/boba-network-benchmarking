@@ -5,10 +5,11 @@ import * as fs from "fs";
 import BigNumber from "bignumber.js";
 import { orderbook } from "@dtradeorg/dtrade-ts/abi";
 import { Order } from "@dtradeorg/dtrade-ts/abi/orderbook-lib/types";
-import { Orders } from "@dtradeorg/dtrade-ts/abi/orderbook-lib/helpers/Orders";
+import { Orders, } from "@dtradeorg/dtrade-ts/abi/orderbook-lib/helpers/Orders";
 import { Price } from "@dtradeorg/dtrade-ts/abi/orderbook-lib/price";
 import { ADDRESSES, INTEGERS, PRICES } from "@dtradeorg/dtrade-ts/abi/orderbook-lib/constants";
 import { Fee } from "@dtradeorg/dtrade-ts/abi/orderbook-lib/types";
+
 
 
 config({ path: ".env" });
@@ -70,14 +71,14 @@ async function main(numOps:number){
         return new Wallet(key, provider);
     })
 
-    // start time
-    var start = process.hrtime()
+    let orders = new Orders(w3, 'Orders', (await provider.getNetwork()).chainId, ordersAddress || '');
 
     const waits = []
     let i = 0;
+    // start time
+    var start = process.hrtime()
     while(i < numOps){   
-        let orders: Orders;
-        const solidityOrder = await OrderContract.orderToSolidity(
+        const solidityOrder = await orders.orderToSolidity(
             { ...defaultOrder, salt: new BigNumber('2425'), limitPrice: new Price('121') }
         );
         // const tx = OrderContract.connect(wallets[i]).cancelOrder(solidityOrder)    
@@ -88,9 +89,6 @@ async function main(numOps:number){
         // }
 
         waits.push(OrderContract.connect(wallets[i]).cancelOrder(solidityOrder));
-
-        // wait for 3 sec to give time to event listener to be established
-        await delay(3000);    
         i++;
     }
     await Promise.all(waits);
