@@ -12,7 +12,8 @@
     "benchmark:mock": "ts-node scripts/01_benchmark.ts",
     "benchmark:trades": "ts-node scripts/02_benchmark.ts",
     "benchmark:erc20": "ts-node scripts/03_benchmark.ts",
-    "benchmark:gas": "ts-node scripts/04_benchmark.ts"
+    "benchmark:trades_gas": "ts-node scripts/04_benchmark.ts",
+    "benchmark:cancel": "ts-node scripts/05_benchmark.ts"
   },
   "repository": {
     "type": "git",

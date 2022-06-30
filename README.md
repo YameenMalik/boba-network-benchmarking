@@ -16,5 +16,6 @@ Script to test out the TPS of boba network
 
 - To run dummy contract benchmark run `yarn benchmark:mock <num_ops>`
 - To run trades benchmark run `yarn benchmark:trades <num_ops>`
+- To run batch trades gas benchmark run `yarn benchmark:trades_gas <num_ops> <batch_size>`
 
  Please ensure that 'scripts/wallets.json` must contain enough private keys to perform `num_ops` transactions. If the num wallets < num_ops then the number of transactions performed will be equal to num_wallets.
