@@ -56,8 +56,6 @@ const defaultOrder: Order = {
     salt: new BigNumber('425'),
 };
 
-const delay = (ms:number) => new Promise(resolve => setTimeout(resolve, ms))
-
 async function main(numOps:number){
     // add accounts to w3
     accounts.map((acct) => {
@@ -74,7 +72,6 @@ async function main(numOps:number){
     let orders = new Orders(w3, 'Orders', (await provider.getNetwork()).chainId, ordersAddress || '');
     const gasLimit = (await provider.getBlock('latest')).gasLimit
 
-    const waits = []
     let i = 0;
     // start time
     var start = process.hrtime()
@@ -82,10 +79,15 @@ async function main(numOps:number){
         const solidityOrder = await orders.orderToSolidity(
             { ...defaultOrder, salt: new BigNumber('2425'), limitPrice: new Price('121') }
         );
-        waits.push(OrderContract.connect(wallets[i]).cancelOrder(solidityOrder, {gasLimit:gasLimit}));
+        const tx = OrderContract.connect(wallets[i]).cancelOrder(solidityOrder, {gasLimit:gasLimit})
+        try {
+            const resp = await((await tx).wait());        
+            console.log("single cancel used %d gas unit against a limit of %d", +resp.gasUsed, gasLimit);    
+        } catch(ex) {
+            console.error(ex)
+        }
         i++;
     }
-    await Promise.all(waits);
 
 
     // stop time
@@ -96,7 +98,7 @@ async function main(numOps:number){
 
 if (require.main === module) {
     if(process.argv.length != 3){
-        console.error("Error: Provide the number of operations to be performed and number of trades per operation: yarn benchmark:cancel <num_ops>")
+        console.error("Error: Provide the number of operations to be performed and number of trades per operation: yarn benchmark:cancel_gas <num_ops>")
         process.exit(1)
     }
 
