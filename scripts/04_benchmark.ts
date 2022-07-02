@@ -107,9 +107,6 @@ async function main(numOps:number, numTradePairs:number){
     while(i < numOps){    
         const settlementRequest = await generateOrdersWithSettlementSize(orderSigner, accounts, numTradePairs);
         const transformedOrder = transformRawOrderTx(settlementRequest.order, orderSigner);
-
-        // wait for 3 sec to give time to event listener to be established
-        await delay(3000);
     
         const tx = TASK(wallets[i], transformedOrder.accounts, transformedOrder.trades);  
         try {
@@ -127,7 +124,7 @@ async function main(numOps:number, numTradePairs:number){
 
 if (require.main === module) {
     if(process.argv.length != 4){
-        console.error("Error: Provide the number of operations to be performed and number of trades per operation: yarn benchmark <num_ops> <num_trades>")
+        console.error("Error: Provide the number of operations to be performed and number of trades per operation: yarn benchmark:trades_gas <num_ops> <num_trades>")
         process.exit(1)
     }
 
