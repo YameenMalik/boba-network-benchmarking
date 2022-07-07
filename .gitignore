@@ -105,3 +105,6 @@ dist
 
 artifacts/
 cache/
+
+# Exclude copied typechain-artifacts
+dtradeorg/dtrade-ts/abi/orderbook/*
