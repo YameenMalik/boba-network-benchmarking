@@ -78,9 +78,6 @@ const POST_TASK = async () => {
     console.log("-> Final Position Size: ", currentPositionSize);
 };
 
-const delay = (ms:number) => new Promise(resolve => setTimeout(resolve, ms))
-
-
 async function main(numOps:number, numTradePairs:number){
     const orderSigner = new OrderSigner(
         w3,

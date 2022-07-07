@@ -56,7 +56,7 @@ const defaultOrder: Order = {
     salt: new BigNumber('425'),
 };
 
-async function main(numOps:number){
+async function main(numOps:number, cancelBatchSize:number){
     // add accounts to w3
     accounts.map((acct) => {
         w3.eth.accounts.wallet.add(acct.privateKey);
@@ -72,14 +72,21 @@ async function main(numOps:number){
     let orders = new Orders(w3, 'Orders', (await provider.getNetwork()).chainId, ordersAddress || '');
     const gasLimit = (await provider.getBlock('latest')).gasLimit
 
+
+    const cancelOrders = [];
+    let j = 0;
+    while(j < cancelBatchSize) {
+        cancelOrders.push(await orders.orderToSolidity(
+            { ...defaultOrder, salt: new BigNumber('2425'), limitPrice: new Price(Math.floor(Math.random() * 100)) }
+        ))
+        j += 1
+    }
+
     let i = 0;
     // start time
     var start = process.hrtime()
     while(i < numOps){   
-        const solidityOrder = await orders.orderToSolidity(
-            { ...defaultOrder, salt: new BigNumber('2425'), limitPrice: new Price('121') }
-        );
-        const tx = OrderContract.connect(wallets[i]).cancelOrders([solidityOrder], {gasLimit:gasLimit})
+        const tx = OrderContract.connect(wallets[i]).cancelOrders(cancelOrders, {gasLimit:gasLimit})
         try {
             const resp = await((await tx).wait());        
             console.log("single cancel used %d gas unit against a limit of %d", +resp.gasUsed, gasLimit);    
@@ -97,10 +104,10 @@ async function main(numOps:number){
 }
 
 if (require.main === module) {
-    if(process.argv.length != 3){
-        console.error("Error: Provide the number of operations to be performed and number of trades per operation: yarn benchmark:cancel_gas <num_ops>")
+    if(process.argv.length != 4){
+        console.error("Error: Provide the number of operations to be performed and size of the cancel batch: yarn benchmark:batch_cancel_gas <num_ops> <cancel_batch_size>")
         process.exit(1)
     }
 
-    main(Number(process.argv[2]));
+    main(Number(process.argv[2]), Number(process.argv[3]));
 }
