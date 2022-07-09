@@ -3,17 +3,13 @@ import { ethers, Wallet } from "ethers";
 import Web3 from "web3";
 import * as fs from "fs";
 import BigNumber from "bignumber.js";
-import * as orderbook from "../dtradeorg/dtrade-ts/abi/orderbook";
-import { Order } from "@dtradeorg/dtrade-ts/abi/orderbook-lib/types";
-import { Orders, } from "@dtradeorg/dtrade-ts/abi/orderbook-lib/helpers/Orders";
-import { Price } from "@dtradeorg/dtrade-ts/abi/orderbook-lib/price";
-import { ADDRESSES, INTEGERS, PRICES } from "@dtradeorg/dtrade-ts/abi/orderbook-lib/constants";
-import { Fee } from "@dtradeorg/dtrade-ts/abi/orderbook-lib/types";
-
-
+import * as orderbook from "@firefly-exchange/library/dist/src/contracts/exchange";
+import { Price, Fee } from "@firefly-exchange/library/dist/src/classes";
+import { ADDRESSES, INTEGERS, PRICES } from "@firefly-exchange/library/dist/src/constants";
+import { OrderSigner } from "@firefly-exchange/library/dist/src/classes";
+import { Order } from "@firefly-exchange/library/dist/src/interfaces";
 
 config({ path: ".env" });
-
 
 // BOBA MOONBASE
 const ordersAddress = "0x38a2d134C11ec66eBFD5D8eF59CE06cfFd02832e";
@@ -45,8 +41,8 @@ const limitPrice = new Price('100');
 const defaultOrder: Order = {
     limitPrice,
     isBuy: true,
-    isDecreaseOnly: false,
-    amount: orderAmount,
+    reduceOnly: false,
+    quantity: orderAmount,
     triggerPrice: PRICES.NONE,
     limitFee: Fee.fromBips(0),
     leverage: new BigNumber(1).times(1e18),
@@ -69,14 +65,14 @@ async function main(numOps:number, cancelBatchSize:number){
         return new Wallet(key, provider);
     })
 
-    let orders = new Orders(w3, 'Orders', (await provider.getNetwork()).chainId, ordersAddress || '');
+    let orders = new OrderSigner(w3, (await provider.getNetwork()).chainId, ordersAddress || '', 'Orders');
     const gasLimit = (await provider.getBlock('latest')).gasLimit
 
 
     const cancelOrders = [];
     let j = 0;
     while(j < cancelBatchSize) {
-        cancelOrders.push(await orders.orderToSolidity(
+        cancelOrders.push(await OrderSigner.orderToSolidity(
             { ...defaultOrder, salt: new BigNumber('2425'), limitPrice: new Price(Math.floor(Math.random() * 100)) }
         ))
         j += 1
@@ -85,11 +81,11 @@ async function main(numOps:number, cancelBatchSize:number){
     let i = 0;
     // start time
     var start = process.hrtime()
-    while(i < numOps){   
+    while(i < numOps) {   
         const tx = OrderContract.connect(wallets[i]).cancelOrders(cancelOrders, {gasLimit:gasLimit})
         try {
             const resp = await((await tx).wait());        
-            console.log("single cancel used %d gas unit against a limit of %d", +resp.gasUsed, gasLimit);    
+            console.log("batch cancel used %d gas unit against a limit of %d", +resp.gasUsed, gasLimit);    
         } catch(ex) {
             console.error(ex)
         }

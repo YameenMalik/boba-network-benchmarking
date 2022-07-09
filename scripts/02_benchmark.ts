@@ -3,8 +3,8 @@ import { ethers, Wallet } from "ethers";
 import Web3 from "web3";
 import * as fs from "fs";
 import BigNumber from "bignumber.js";
-import { orderbook } from "@dtradeorg/dtrade-ts/abi";
-import { Orders as OrderSigner } from "@dtradeorg/dtrade-ts/abi/orderbook-lib/";
+import * as orderbook from "@firefly-exchange/library/dist/src/contracts/exchange";
+import { OrderSigner } from "@firefly-exchange/library/dist/src/classes";
 import { generateOrders, transformRawOrderTx } from "./helpers";
 import { Trade } from "./types";
 config({ path: ".env" });
@@ -85,9 +85,9 @@ async function main(numOps:number){
 
     const orderSigner = new OrderSigner(
         w3,
-        "Orders",
         (await provider.getNetwork()).chainId,
-        ordersAddress
+        ordersAddress,
+        "Orders"
       );
 
       

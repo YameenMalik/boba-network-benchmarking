@@ -16,7 +16,6 @@
     "benchmark:cancel": "ts-node scripts/05_benchmark.ts",
     "benchmark:cancel_gas": "ts-node scripts/06_benchmark.ts",
     "benchmark:batch_cancel_gas": "ts-node scripts/07_benchmark.ts"
-
   },
   "repository": {
     "type": "git",
@@ -38,7 +37,7 @@
     "yarn": "^1.22.18"
   },
   "dependencies": {
-    "@dtradeorg/dtrade-ts": "^1.9.5",
+    "@firefly-exchange/library": "^1.0.18",
     "@typechain/ethers-v5": "^6.0.5",
     "chai": "^4.3.6",
     "dotenv": "^16.0.0",

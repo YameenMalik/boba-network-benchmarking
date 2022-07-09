@@ -5,14 +5,17 @@ import {
     SignedSolidityOrder,
     Order as OnChainOrder,
     RawOrder
-  } from "@dtradeorg/dtrade-ts/abi/orderbook-lib/types";
+  } from "@firefly-exchange/library/dist/src/interfaces";
 
 import {
     Price,
-    Types,
-    Orders as OrderSigner
-  } from "@dtradeorg/dtrade-ts/abi/orderbook-lib/";
+    OrderSigner,
+    Fee,  
+  } from "@firefly-exchange/library/dist/src/classes";
 
+import {
+    SigningMethod,
+  } from "@firefly-exchange/library/dist/src/enums";
 
 export function toBigNumber(num: number): BigNumber {
     return new BigNumber(num).shiftedBy(18);
@@ -90,12 +93,12 @@ export async function createSignedOrder(
     const onChainOrder: OnChainOrder = {
       limitPrice: new Price(order.price),
       isBuy: order.isBuy,
-      amount: toBigNumber(order.amount),
+      quantity: toBigNumber(order.amount),
       maker: order.maker,
       leverage: toBigNumber(order?.leverage || 1),
       expiration: new BigNumber(order?.expiration || 3153600000), // ????
-      isDecreaseOnly: false,
-      limitFee: new Types.Fee(0),
+      reduceOnly: false,
+      limitFee: new Fee(0),
       triggerPrice: new Price(0),
       taker: "0x0000000000000000000000000000000000000000",
       salt: new BigNumber(new Date().getTime())
@@ -103,14 +106,14 @@ export async function createSignedOrder(
   
     const generatedSignature = await orderSigner.signOrder(
       onChainOrder,
-      Types.SigningMethod.Hash
+      SigningMethod.Hash
     );
   
     // create raw order, used to generate order hash
     const rawOrder: RawOrder = {
       isBuy: onChainOrder.isBuy,
-      isDecreaseOnly: onChainOrder.isDecreaseOnly,
-      amount: onChainOrder.amount.toFixed(0),
+      reduceOnly: onChainOrder.reduceOnly,
+      quantity: onChainOrder.quantity.toFixed(0),
       limitPrice: onChainOrder.limitPrice.value.times(1e18).toFixed(0),
       triggerPrice: onChainOrder.triggerPrice.value.times(1e18).toFixed(0),
       limitFee: onChainOrder.limitFee.value.times(1e18).toFixed(0),
@@ -122,7 +125,7 @@ export async function createSignedOrder(
       typedSignature: generatedSignature
     };
   
-    const hash = orderSigner.getRawOrderHash(
+    const hash = OrderSigner.getRawOrderHash(
       rawOrder,
       orderSigner.getDomainHash()
     );
@@ -130,8 +133,8 @@ export async function createSignedOrder(
     // Create signed solidity order to generate bytecode
     const signedOrder: SignedSolidityOrder = {
       isBuy: onChainOrder.isBuy,
-      isDecreaseOnly: onChainOrder.isDecreaseOnly,
-      amount: onChainOrder.amount,
+      reduceOnly: onChainOrder.reduceOnly,
+      quantity: onChainOrder.quantity,
       limitPrice: onChainOrder.limitPrice.value.times(1e18), // on chain order limitPrice is not in 10^18 format
       triggerPrice: onChainOrder.triggerPrice.value.times(1e18),
       limitFee: onChainOrder.limitFee.value.times(1e18),
