@@ -66,7 +66,6 @@ async function main(numOps:number){
         return new Wallet(key, provider);
     })
 
-    let orders = new OrderSigner(w3, (await provider.getNetwork()).chainId, ordersAddress || '', 'Orders');
     const gasLimit = (await provider.getBlock('latest')).gasLimit
 
     let i = 0;

@@ -54,8 +54,6 @@ const defaultOrder: Order = {
     salt: new BigNumber('425'),
 };
 
-const delay = (ms:number) => new Promise(resolve => setTimeout(resolve, ms))
-
 async function main(numOps:number){
     // add accounts to w3
     accounts.map((acct) => {
@@ -69,7 +67,6 @@ async function main(numOps:number){
         return new Wallet(key, provider);
     })
 
-    let orders = new OrderSigner(w3, (await provider.getNetwork()).chainId, ordersAddress || '', 'Orders');
     const gasLimit = (await provider.getBlock('latest')).gasLimit
 
     const waits = []

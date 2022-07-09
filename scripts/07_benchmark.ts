@@ -65,9 +65,7 @@ async function main(numOps:number, cancelBatchSize:number){
         return new Wallet(key, provider);
     })
 
-    let orders = new OrderSigner(w3, (await provider.getNetwork()).chainId, ordersAddress || '', 'Orders');
     const gasLimit = (await provider.getBlock('latest')).gasLimit
-
 
     const cancelOrders = [];
     let j = 0;
