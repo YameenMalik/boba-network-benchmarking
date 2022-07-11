@@ -7,6 +7,8 @@ import Web3 from "web3";
 import {Wallet, Contract, ethers } from "ethers";
 import { Account } from "web3-core";
 import { MarginBank__factory, PriceOracle__factory } from "@dtradeorg/dtrade-ts/abi/orderbook";
+import { Orders as OrderSigner } from "@dtradeorg/dtrade-ts/abi/orderbook-lib/";
+
 import BigNumber from "bignumber.js";
 
 config({ path: ".env" });
@@ -36,16 +38,23 @@ const argv = yargs.options({
         description:"leverage for each trade"
     },
     oraclePriceAtStart: {
-        alias: "os",
+        alias: "s",
         demandOption: true,
         description:"price of oracle before performing trades"
     },
     oraclePriceAtEnd: {
-        alias: "oe",
+        alias: "e",
         demandOption: true,
         description:"price of oracle after performing trades"
-    }
-}).argv;  
+    },
+    fundFaucet: {
+      alias: "f",
+      type: 'boolean', 
+      default: false,
+      demandOption: false,
+      description:"by default assumes faucet has enough usdc token to distribute"
+  }
+}).parseSync();  
 
 // ----------------------------------------------------------------//
 //                   PROCESS ARGUMENTS/VARIABLES
@@ -58,6 +67,8 @@ const price = Number(argv.price);
 const leverage = Number(argv.leverage);
 const oraclePriceAtStart = Number(argv.oraclePriceAtStart);
 const oraclePriceAtEnd = Number(argv.oraclePriceAtEnd);
+const fundFaucet = Number(argv.fundFaucet);
+let accountsToCreate = (totalTrades * orderPerTrade) + totalTrades; 
 
 // process .env variables
 const rpcURL = process.env.BOBA_RINKEBY_URL || "";
@@ -78,11 +89,13 @@ const admin = new Wallet(adminAccountPvtKey, new ethers.providers.JsonRpcProvide
 const MARGIN_BANK_ADDRESS = getAddress("MarginBank");
 const TEST_TOKEN_ADDRESS = getAddress("Test_Token");
 const PRICE_ORACLE_ADDRESS = getAddress("PriceOracle");
+const ORDERS_ADDRESS = getAddress("Orders");
 
 // initialize contracts
 const marginBank = MarginBank__factory.connect(MARGIN_BANK_ADDRESS, admin);
 const oracle = PriceOracle__factory.connect(PRICE_ORACLE_ADDRESS, admin);
 const tokenUSDC = new Contract(TEST_TOKEN_ADDRESS, testTokenABI.abi);
+const orderSigner = new OrderSigner(w3, "Orders", Number(CHAIN_ID), ORDERS_ADDRESS);
 
 
 // ----------------------------------------------------------------//
@@ -110,6 +123,7 @@ async function createFundedAccounts(numWallets: number) {
     // create new wallets, provide them test usdc tokens
     // and lock their collateral in margin bank
     for (let i = 0; i < numWallets; i++) {
+      console.log(`-- Account # ${i+1}`);
       accounts.push(w3.eth.accounts.create());
       w3.eth.accounts.wallet.add(accounts[i].privateKey);
       // assuming 1 mil is enough for performing the trades
@@ -117,35 +131,46 @@ async function createFundedAccounts(numWallets: number) {
     }
   }
 
+
+
+
+    
 async function main() {
 
-  // mint token for admin and provide allowance to margin bank
-  console.log("Minting token for faucet")
-  await(await tokenUSDC.connect(admin).mint(
-    admin.getAddress(),
-    new BigNumber(999_000_000_000 * 1e18).toFixed(),
-    )).wait();
+  if(fundFaucet){
+    // mint token for admin and provide allowance to margin bank
+    console.log("Minting token for faucet")
+    await(await tokenUSDC.connect(admin).mint(
+      admin.getAddress(),
+      new BigNumber(999_000_000_000 * 1e18).toFixed(),
+      )).wait();
 
-  console.log("Provide token transfer approval to Margin bank")
-  await (await tokenUSDC.connect(admin).approve(
-    MARGIN_BANK_ADDRESS,
-    new BigNumber(999_000_000_000 * 1e18).toFixed(),
-    )).wait();
+    console.log("Provide token transfer approval to Margin bank")
+    await (await tokenUSDC.connect(admin).approve(
+      MARGIN_BANK_ADDRESS,
+      new BigNumber(999_000_000_000 * 1e18).toFixed(),
+      )).wait();
+  }
+
+
+  console.log(`Creating ${accountsToCreate} accounts and depositing USDC to them`)
+  await createFundedAccounts(accountsToCreate);
   
+
+  // create N trades, each with M orders;
+
+
   console.log("Set oracle price at start to: ", oraclePriceAtStart)
   await(await oracle.setPrice(
     PAIR_NAME, 
-    new BigNumber(oraclePriceAtStart).shiftedBy(18), 
+    new BigNumber(oraclePriceAtStart).shiftedBy(18).toFixed(0), 
     new Date().getTime()
     )).wait();
-
-
-  
 
   console.log("Set oracle price at end to: ", oraclePriceAtEnd)
   await(await oracle.setPrice(
       PAIR_NAME, 
-      new BigNumber(oraclePriceAtEnd).shiftedBy(18), 
+      new BigNumber(oraclePriceAtEnd).shiftedBy(18).toFixed(0), 
       new Date().getTime()
       )).wait();
 };
