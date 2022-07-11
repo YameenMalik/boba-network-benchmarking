@@ -160,22 +160,27 @@ export async function createSignedOrder(
 export async function generateOrdersWithSettlementSize(
   orderSigner:OrderSigner,
   accounts:any[],
-  settlementQueueSize: number
+  settlementQueueSize: number,
+  makerSideLong:boolean = false,
+  price:number=10,
+  leverage:number=1,
+  isTakerSame:boolean=true
 ): Promise<SettlementRequest> {
   const makerOrder = await createSignedOrder(orderSigner, {
     maker: accounts[0].address,
-    price: 10,
+    price: price,
+    leverage: leverage,
     amount: settlementQueueSize,
-    isBuy: false
+    isBuy: makerSideLong
   } as TestOrder);
 
   const ordersToSettle: OrdersToSettle[] = [];
   while (--settlementQueueSize >= 0) {
     const takerOrder = await createSignedOrder(orderSigner, {
-      maker: accounts[1].address,
-      price: 10,
+      maker: isTakerSame? accounts[1].address: accounts[settlementQueueSize+1].address,
+      price: price,
       amount: 1,
-      isBuy: true
+      isBuy: !makerSideLong
     } as TestOrder)
 
     ordersToSettle.push({
@@ -235,15 +240,14 @@ export async function generateOrders(
 export function transformRawOrderTx(txs: OrdersToSettle[], orderSigner:OrderSigner) {
   
     // Get all maker addresses
-    const makerAddress: string[] = [];
+    const acctAddresses: string[] = [];
     const trades: Trade[] = [];
     txs.map((f) => {
-      makerAddress.push(f.makerOrder.maker);
+      acctAddresses.push(f.makerOrder.maker);
+      acctAddresses.push(f.takerOrder.maker);
     });
 
-    // Taker address will be same for all taker orders so just take from the first one
-    // Create accounts array
-    const accounts = _.chain([txs[0].takerOrder.maker, ...makerAddress])
+    const accounts = _.chain(acctAddresses)
       .map(_.toLower)
       .sort()
       .sortedUniq()
