@@ -22,6 +22,8 @@ Script to test out the TPS of boba network
 
 ### Liquidation benchmarks
 The script creates and funds required account for the benchmark. The script wi
+
 To see available cli args, run `yarn benchmark:liquidations --help`
+
 A possible configuration of params looks like this:
 `yarn benchmark:liquidations --numTrades 1 --ordersPerTrade 1 --price 10 --leverage 1 --oraclePriceAtStart 10 --oraclePriceAtEnd 15 --makerSideLong --fundFaucet` 
