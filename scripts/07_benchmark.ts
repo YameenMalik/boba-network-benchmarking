@@ -1,14 +1,16 @@
-// the script perform N number of trades, where each trade 
+// The script perform N number of trades, where each trade 
 // contains M number of orders.
-// 
+// Sets initial and ending oracle price after executing trades
+// All takers are to be liquidated
+
 import * as yargs from "yargs";
 import { config } from "dotenv";
 import Web3 from "web3";
 import {Wallet, Contract, ethers } from "ethers";
 import { Account } from "web3-core";
-import { MarginBank__factory, PriceOracle__factory } from "@dtradeorg/dtrade-ts/abi/orderbook";
+import { MarginBank__factory, PriceOracle__factory, PerpetualV1__factory } from "@dtradeorg/dtrade-ts/abi/orderbook";
 import { Orders as OrderSigner } from "@dtradeorg/dtrade-ts/abi/orderbook-lib/";
-
+import { generateOrdersWithSettlementSize, transformRawOrderTx } from "./helpers";
 import BigNumber from "bignumber.js";
 
 config({ path: ".env" });
@@ -47,6 +49,14 @@ const argv = yargs.options({
         demandOption: true,
         description:"price of oracle after performing trades"
     },
+    makerSideLong: {
+      alias: "m",
+      type: 'boolean', 
+      default: false,
+      demandOption: false,
+      description:"side of maker will be true(long)/false(short). Default is short"
+    },
+
     fundFaucet: {
       alias: "f",
       type: 'boolean', 
@@ -68,7 +78,14 @@ const leverage = Number(argv.leverage);
 const oraclePriceAtStart = Number(argv.oraclePriceAtStart);
 const oraclePriceAtEnd = Number(argv.oraclePriceAtEnd);
 const fundFaucet = Number(argv.fundFaucet);
-let accountsToCreate = (totalTrades * orderPerTrade) + totalTrades; 
+const makerSideLong = argv.makerSideLong; //maker will be going long and all takers will be short.
+
+let accountsToCreate = (totalTrades * orderPerTrade) + 1; 
+
+if(oraclePriceAtStart == oraclePriceAtEnd){
+  console.log('Oracle price at start and end can not be same for liquidations to take place');
+  process.exit(1);
+}
 
 // process .env variables
 const rpcURL = process.env.BOBA_RINKEBY_URL || "";
@@ -84,20 +101,21 @@ const CHAIN_ID = "1297";
 
 const w3 = new Web3(rpcURL);
 const admin = new Wallet(adminAccountPvtKey, new ethers.providers.JsonRpcProvider(rpcURL));
+const provider = new ethers.providers.JsonRpcProvider(rpcURL);
 
 // contract addresses
 const MARGIN_BANK_ADDRESS = getAddress("MarginBank");
 const TEST_TOKEN_ADDRESS = getAddress("Test_Token");
 const PRICE_ORACLE_ADDRESS = getAddress("PriceOracle");
 const ORDERS_ADDRESS = getAddress("Orders");
+const PERPETUAL_ADDRESS = getAddress("PerpetualV1");
 
 // initialize contracts
 const marginBank = MarginBank__factory.connect(MARGIN_BANK_ADDRESS, admin);
 const oracle = PriceOracle__factory.connect(PRICE_ORACLE_ADDRESS, admin);
+const perpetual = PerpetualV1__factory.connect(PERPETUAL_ADDRESS, admin);
 const tokenUSDC = new Contract(TEST_TOKEN_ADDRESS, testTokenABI.abi);
 const orderSigner = new OrderSigner(w3, "Orders", Number(CHAIN_ID), ORDERS_ADDRESS);
-
-
 // ----------------------------------------------------------------//
 //                          FUNCTIONS
 // ----------------------------------------------------------------//
@@ -129,6 +147,7 @@ async function createFundedAccounts(numWallets: number) {
       // assuming 1 mil is enough for performing the trades
       await fundWallet(accounts[i].address, 1_000_000);
     }
+    return accounts;
   }
 
 
@@ -154,11 +173,7 @@ async function main() {
 
 
   console.log(`Creating ${accountsToCreate} accounts and depositing USDC to them`)
-  await createFundedAccounts(accountsToCreate);
-  
-
-  // create N trades, each with M orders;
-
+  const accounts = await createFundedAccounts(accountsToCreate);
 
   console.log("Set oracle price at start to: ", oraclePriceAtStart)
   await(await oracle.setPrice(
@@ -166,6 +181,33 @@ async function main() {
     new BigNumber(oraclePriceAtStart).shiftedBy(18).toFixed(0), 
     new Date().getTime()
     )).wait();
+
+
+  // create N trades, each with M orders;
+  console.log("Performing Trades:")
+  for(let i =1; i <= totalTrades; i++) {
+    console.log(`-- Trade # ${i}`);
+
+    let accountsToUse = [accounts[0]];
+    accountsToUse.push(...accounts.slice(orderPerTrade*(i-1)+1, orderPerTrade*(i)+1));
+
+    const settlementRequest = await generateOrdersWithSettlementSize(
+      orderSigner, 
+      accountsToUse, 
+      orderPerTrade,
+      makerSideLong, 
+      price, 
+      leverage, 
+      false // is same account to be used for taker for all orders
+      ); 
+
+    const transformedOrder = transformRawOrderTx(settlementRequest.order, orderSigner);
+
+    await(await perpetual.connect(admin).trade(
+      transformedOrder.accounts, 
+      transformedOrder.trades, 
+      {gasLimit: 11_000_000})).wait();
+  }
 
   console.log("Set oracle price at end to: ", oraclePriceAtEnd)
   await(await oracle.setPrice(
