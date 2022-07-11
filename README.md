@@ -19,3 +19,9 @@ Script to test out the TPS of boba network
 - To run batch trades gas benchmark run `yarn benchmark:trades_gas <num_ops> <batch_size>`
 
  Please ensure that 'scripts/wallets.json` must contain enough private keys to perform `num_ops` transactions. If the num wallets < num_ops then the number of transactions performed will be equal to num_wallets.
+
+### Liquidation benchmarks
+The script creates and funds required account for the benchmark. The script wi
+To see available cli args, run `yarn benchmark:liquidations --help`
+A possible configuration of params looks like this:
+`yarn benchmark:liquidations --numTrades 1 --ordersPerTrade 1 --price 10 --leverage 1 --oraclePriceAtStart 10 --oraclePriceAtEnd 15 --makerSideLong --fundFaucet` 
