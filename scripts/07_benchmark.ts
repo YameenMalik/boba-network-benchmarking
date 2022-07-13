@@ -8,7 +8,7 @@ import { config } from "dotenv";
 import Web3 from "web3";
 import {Wallet, Contract, ethers } from "ethers";
 import { Account } from "web3-core";
-import { MarginBank__factory, PriceOracle__factory, PerpetualV1__factory } from "@dtradeorg/dtrade-ts/abi/orderbook";
+import { MarginBank__factory, PriceOracle__factory, PerpetualV1__factory, Liquidation__factory } from "@dtradeorg/dtrade-ts/abi/orderbook";
 import { Orders as OrderSigner } from "@dtradeorg/dtrade-ts/abi/orderbook-lib/";
 import { generateOrdersWithSettlementSize, transformRawOrderTx } from "./helpers";
 import BigNumber from "bignumber.js";
@@ -109,11 +109,17 @@ const TEST_TOKEN_ADDRESS = getAddress("Test_Token");
 const PRICE_ORACLE_ADDRESS = getAddress("PriceOracle");
 const ORDERS_ADDRESS = getAddress("Orders");
 const PERPETUAL_ADDRESS = getAddress("PerpetualV1");
+const LIQUIDATION_ADDRESS = getAddress("Liquidation");
 
 // initialize contracts
 const marginBank = MarginBank__factory.connect(MARGIN_BANK_ADDRESS, admin);
 const oracle = PriceOracle__factory.connect(PRICE_ORACLE_ADDRESS, admin);
 const perpetual = PerpetualV1__factory.connect(PERPETUAL_ADDRESS, admin);
+const liquidation = Liquidation__factory.connect(
+  LIQUIDATION_ADDRESS,
+  new Wallet(adminAccountPvtKey, new ethers.providers.JsonRpcProvider("https://replica.bobabase.boba.network")
+  ));
+
 const tokenUSDC = new Contract(TEST_TOKEN_ADDRESS, testTokenABI.abi);
 const orderSigner = new OrderSigner(w3, "Orders", Number(CHAIN_ID), ORDERS_ADDRESS);
 // ----------------------------------------------------------------//
@@ -176,6 +182,7 @@ async function main() {
   const accounts = await createFundedAccounts(accountsToCreate);
 
   console.log("Set oracle price at start to: ", oraclePriceAtStart)
+  
   await(await oracle.setPrice(
     PAIR_NAME, 
     new BigNumber(oraclePriceAtStart).shiftedBy(18).toFixed(0), 
@@ -215,9 +222,36 @@ async function main() {
       new BigNumber(oraclePriceAtEnd).shiftedBy(18).toFixed(0), 
       new Date().getTime()
       )).wait();
-};
+
+  
+  const expectedLiquidations =  totalTrades * orderPerTrade;
+  console.log("Expected number of liquidations: ", expectedLiquidations);
+  let eventCount = 0;
+  const listenerStart = process.hrtime();
+  let firstEventTime = process.hrtime();
+
+  liquidation.on("LogLiquidated", (...args:any[])=>{ 
+
+    if(eventCount == 0){
+      firstEventTime = process.hrtime();
+    }
+
+    console.log(`Liquidation event # ${++eventCount}`)
+
+    if(eventCount == expectedLiquidations){
+      var listenerEnd = process.hrtime(listenerStart)
+      console.info('-> RPC Call to All Events Receive: %ds %dms', listenerEnd[0], listenerEnd[1] / 1000000)
+
+      var eventListenerEnd = process.hrtime(firstEventTime);
+      console.info('-> First to Last Event Receive: %ds %dms', eventListenerEnd[0], eventListenerEnd[1] / 1000000)
+
+      liquidation.removeAllListeners();
+      process.exit(0);
+    }
+  });
+}
 
 if (require.main === module) {
     main();
-  }
+}
   
