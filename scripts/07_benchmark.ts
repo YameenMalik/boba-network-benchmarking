@@ -1,5 +1,6 @@
 import { config } from "dotenv";
 import { Wallet } from "ethers";
+import { min } from "lodash";
 import { getOrderContract, getProviderGasLimit, getWallets, linkPrivateKeys, stubSolidityOrders } from "./common";
 
 config({ path: ".env" });
@@ -29,15 +30,26 @@ async function main(numOps:number, cancelBatchSize:number){
         i++;
     } 
 
+    let maxTime = -1
+    let minTime = Infinity
     let avgTime  = 0;
     i = 0;
     while(i < timeElapsed.length) {
         avgTime += timeElapsed[i]
+        if(timeElapsed[i] > maxTime) {
+            maxTime = timeElapsed[i]
+        }
+        if(timeElapsed[i] < minTime) {
+            minTime = timeElapsed[i]
+        }
         i++;
     }
     avgTime = avgTime / timeElapsed.length
     console.log(timeElapsed)
-    console.log("average time for on chain batch cancellation with a batch size of %i is %f ms", cancelBatchSize, avgTime)
+    console.log("batch size = %i", cancelBatchSize)
+    console.log("minimum time = %f ms", cancelBatchSize, minTime)
+    console.log("maximum time = %f ms", cancelBatchSize, maxTime)
+    console.log("average time = %f ms", cancelBatchSize, avgTime)
 }
 
 if (require.main === module) {
