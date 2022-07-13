@@ -3,13 +3,11 @@ import { ethers, Wallet } from "ethers";
 import Web3 from "web3";
 import * as fs from "fs";
 import BigNumber from "bignumber.js";
-import { orderbook } from "@dtradeorg/dtrade-ts/abi";
-import { Order } from "@dtradeorg/dtrade-ts/abi/orderbook-lib/types";
-import { Orders, } from "@dtradeorg/dtrade-ts/abi/orderbook-lib/helpers/Orders";
-import { Price } from "@dtradeorg/dtrade-ts/abi/orderbook-lib/price";
-import { ADDRESSES, INTEGERS, PRICES } from "@dtradeorg/dtrade-ts/abi/orderbook-lib/constants";
-import { Fee } from "@dtradeorg/dtrade-ts/abi/orderbook-lib/types";
-
+import * as orderbook from "@firefly-exchange/library/dist/src/contracts/exchange";
+import { Price, Fee } from "@firefly-exchange/library/dist/src/classes";
+import { ADDRESSES, INTEGERS, PRICES } from "@firefly-exchange/library/dist/src/constants";
+import { Order } from "@firefly-exchange/library/dist/src/interfaces";
+import { OrderSigner } from "@firefly-exchange/library/dist/src/classes";
 
 
 config({ path: ".env" });
@@ -45,8 +43,8 @@ const limitPrice = new Price('100');
 const defaultOrder: Order = {
     limitPrice,
     isBuy: true,
-    isDecreaseOnly: false,
-    amount: orderAmount,
+    reduceOnly: false,
+    quantity: orderAmount,
     triggerPrice: PRICES.NONE,
     limitFee: Fee.fromBips(0),
     leverage: new BigNumber(1).times(1e18),
@@ -55,8 +53,6 @@ const defaultOrder: Order = {
     expiration: INTEGERS.ONE_YEAR_IN_SECONDS.times(100),
     salt: new BigNumber('425'),
 };
-
-const delay = (ms:number) => new Promise(resolve => setTimeout(resolve, ms))
 
 async function main(numOps:number){
     // add accounts to w3
@@ -71,7 +67,6 @@ async function main(numOps:number){
         return new Wallet(key, provider);
     })
 
-    let orders = new Orders(w3, 'Orders', (await provider.getNetwork()).chainId, ordersAddress || '');
     const gasLimit = (await provider.getBlock('latest')).gasLimit
 
     const waits = []
@@ -79,7 +74,7 @@ async function main(numOps:number){
     // start time
     var start = process.hrtime()
     while(i < numOps){   
-        const solidityOrder = await orders.orderToSolidity(
+        const solidityOrder = await OrderSigner.orderToSolidity(
             { ...defaultOrder, salt: new BigNumber('2425'), limitPrice: new Price('121') }
         );
         waits.push(OrderContract.connect(wallets[i]).cancelOrder(solidityOrder, {gasLimit:gasLimit}));
