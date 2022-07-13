@@ -13,17 +13,30 @@ async function main(numOps:number, cancelBatchSize:number){
     const gasLimit = await getProviderGasLimit()
     const orderContract = await getOrderContract()
     const cancelOrders = stubSolidityOrders(cancelBatchSize)
+
     let i = 0;
+    let timeElapsed: number[] = []
     while(i < numOps) {   
+        var start = process.hrtime()
         const tx = orderContract.connect(wallets[i]).cancelOrders(cancelOrders, {gasLimit:gasLimit})
         try {
             const resp = await((await tx).wait());        
-            console.log("batch cancel used %d gas unit against a limit of %d", +resp.gasUsed, gasLimit);    
         } catch(ex) {
             console.error(ex)
         }
+        // stop time
+        timeElapsed.push(process.hrtime(start)[0])
         i++;
     } 
+
+    let avgTime  = 0;
+    i = 0;
+    while(i < timeElapsed.length) {
+        avgTime += timeElapsed[i]
+        i++;
+    }
+    avgTime = avgTime / timeElapsed.length
+    console.log("average time for on chain batch cancellation with a batch size of %i is %f seconds", cancelBatchSize, avgTime)
 }
 
 if (require.main === module) {
