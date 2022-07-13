@@ -55,7 +55,7 @@ async function main(numOps:number, cancelBatchSize:number){
     // start time
     var start = process.hrtime()
 
-    const waits = []
+    const waits: Promise<any>[] = []
     i = 0;
     while(i++ < numOps) {   
         waits.push(orderContract.connect(wallets[i]).cancelOrders(cancelOrders, {gasLimit:gasLimit}));
