@@ -37,7 +37,7 @@ async function main(numOps:number, cancelBatchSize:number){
     }
     avgTime = avgTime / timeElapsed.length
     console.log(timeElapsed)
-    console.log("average time for on chain batch cancellation with a batch size of %i is %f seconds", cancelBatchSize, avgTime)
+    console.log("average time for on chain batch cancellation with a batch size of %i is %f ms", cancelBatchSize, avgTime)
 }
 
 if (require.main === module) {
