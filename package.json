@@ -37,7 +37,7 @@
     "yarn": "^1.22.19"
   },
   "dependencies": {
-    "@firefly-exchange/library": "^1.0.18",
+    "@firefly-exchange/library": "^1.0.19",
     "chai": "^4.3.6",
     "dotenv": "^16.0.1",
     "hardhat": "^2.10.0",

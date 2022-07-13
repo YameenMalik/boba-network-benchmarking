@@ -53,6 +53,8 @@ const defaultOrder: Order = {
 };
 
 async function main(numOps:number, cancelBatchSize:number){
+    console.log(OrderContract)
+
     // add accounts to w3
     accounts.map((acct) => {
         w3.eth.accounts.wallet.add(acct.privateKey);
