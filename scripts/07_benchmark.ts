@@ -50,6 +50,24 @@ async function main(numOps:number, cancelBatchSize:number){
     console.log("minimum time = %f ms", cancelBatchSize, minTime)
     console.log("maximum time = %f ms", cancelBatchSize, maxTime)
     console.log("average time = %f ms", cancelBatchSize, avgTime)
+
+
+    // start time
+    var start = process.hrtime()
+
+    const waits = []
+    while(i < numOps) {   
+        var start = process.hrtime()
+        const tx = orderContract.connect(wallets[i]).cancelOrders(cancelOrders, {gasLimit:gasLimit})
+        waits.push(await tx);
+        i++;
+    }
+    await Promise.all(waits);
+    
+    // stop time
+    var end = process.hrtime(start)
+
+    console.info('-> RPC call response time: %ims', end[1] / 1000000)
 }
 
 if (require.main === module) {
