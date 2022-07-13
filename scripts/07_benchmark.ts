@@ -56,12 +56,21 @@ async function main(numOps:number, cancelBatchSize:number){
     var start = process.hrtime()
 
     const waits = []
-    while(i < numOps) {   
-        const tx = orderContract.connect(wallets[i]).cancelOrders(cancelOrders, {gasLimit:gasLimit})
-        waits.push(await tx);
-        i++;
+    i = 0;
+    while(i++ < numOps) {   
+        waits.push(orderContract.connect(wallets[i]).cancelOrders(cancelOrders, {gasLimit:gasLimit}));
     }
-    await Promise.all(waits);
+
+
+    i = 0;
+    while(i++ < numOps) {   
+        try {
+            await((await waits[i]).wait());        
+        } catch(ex) {
+            console.error(ex)
+        }
+        await Promise.all(waits);
+    }
     
     // stop time
     var end = process.hrtime(start)
