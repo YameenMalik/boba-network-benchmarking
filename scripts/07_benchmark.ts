@@ -15,62 +15,63 @@ async function main(numOps:number, cancelBatchSize:number){
     const orderContract = await getOrderContract()
     const cancelOrders = stubSolidityOrders(cancelBatchSize)
 
-    // let i = 0;
-    // let timeElapsed: number[] = []
-    // while(i < numOps) {   
-    //     var start = process.hrtime()
-    //     const tx = orderContract.connect(wallets[i]).cancelOrders(cancelOrders, {gasLimit:gasLimit})
-    //     try {
-    //         await((await tx).wait());        
-    //     } catch(ex) {
-    //         console.error(ex)
-    //     }
-    //     // stop time
-    //     timeElapsed.push(process.hrtime(start)[1]/1000000)
-    //     i++;
-    // } 
+    let i = 0;
+    let timeElapsed: number[] = []
+    while(i < numOps) {   
+        var start = process.hrtime()
+        const tx = orderContract.connect(wallets[i]).cancelOrders(cancelOrders, {gasLimit:gasLimit})
+        try {
+            await((await tx).wait());        
+        } catch(ex) {
+            console.error(ex)
+        }
+        // stop time
+        timeElapsed.push(process.hrtime(start)[1]/1000000)
+        i++;
+    } 
 
-    // let maxTime = -1
-    // let minTime = Infinity
-    // let avgTime  = 0;
-    // i = 0;
-    // while(i < timeElapsed.length) {
-    //     avgTime += timeElapsed[i]
-    //     if(timeElapsed[i] > maxTime) {
-    //         maxTime = timeElapsed[i]
-    //     }
-    //     if(timeElapsed[i] < minTime) {
-    //         minTime = timeElapsed[i]
-    //     }
-    //     i++;
-    // }
-    // avgTime = avgTime / timeElapsed.length
-    // console.log(timeElapsed)
-    // console.log("batch size = %i", cancelBatchSize)
-    // console.log("minimum time = %f ms", cancelBatchSize, minTime)
-    // console.log("maximum time = %f ms", cancelBatchSize, maxTime)
-    // console.log("average time = %f ms", cancelBatchSize, avgTime)
+    let maxTime = -1
+    let minTime = Infinity
+    let avgTime  = 0;
+    i = 0;
+    while(i < timeElapsed.length) {
+        avgTime += timeElapsed[i]
+        if(timeElapsed[i] > maxTime) {
+            maxTime = timeElapsed[i]
+        }
+        if(timeElapsed[i] < minTime) {
+            minTime = timeElapsed[i]
+        }
+        i++;
+    }
+    avgTime = avgTime / timeElapsed.length
+    console.log(timeElapsed)
+    console.log("batch size = %i", cancelBatchSize)
+    console.log("minimum time = %f ms", cancelBatchSize, minTime)
+    console.log("maximum time = %f ms", cancelBatchSize, maxTime)
+    console.log("average time = %f ms", cancelBatchSize, avgTime)
 
 
     // start time
     var start = process.hrtime()
 
-    const waits: Promise<ContractTransaction>[] = []
+    const waits = []
     let j = 0;
     while(j++ < numOps) {   
         waits.push(orderContract.connect(wallets[j]).cancelOrders(cancelOrders, {gasLimit:gasLimit}));
     }
+    console.log(waits)
 
 
     let k = 0;
-    while(k++ < numOps) {   
+    while(k < numOps) {   
         try {
-            let contracTx = await waits[k]
+            let contracTx:ContractTransaction = await waits[k]
             await(contracTx.wait());        
         } catch(ex) {
             console.error(ex)
         }
-        await Promise.all(waits);
+        k++
     }
     
     // stop time
