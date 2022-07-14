@@ -60,8 +60,6 @@ async function main(numOps:number, cancelBatchSize:number){
     while(j++ < numOps) {   
         waits.push(orderContract.connect(wallets[j]).cancelOrders(cancelOrders, {gasLimit:gasLimit}));
     }
-    console.log(waits)
-
 
     let k = 0;
     while(k < numOps) {   
