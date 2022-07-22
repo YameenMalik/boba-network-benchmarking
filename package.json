@@ -15,7 +15,7 @@
     "benchmark:trades_gas": "ts-node scripts/04_benchmark.ts",
     "benchmark:cancel": "ts-node scripts/05_benchmark.ts",
     "benchmark:cancel_gas": "ts-node scripts/06_benchmark.ts",
-    "benchmark:liquidations": "ts-node scripts/07_benchmark.ts"
+    "benchmark:liquidations": "ts-node scripts/08_benchmark.ts"
   },
   "repository": {
     "type": "git",
