@@ -23,14 +23,14 @@ module.exports = {
     "boba-rinkeby-testnet": {
       gas: 'auto',
       gasPrice: 'auto',
-      url: process.env.BOBA_RINKEBY_URL as string,
+      url: process.env.RPC_URL as string,
       accounts: [process.env.DEPLOYER_PRIVATE_KEY as string]
     },
     
     "boba-moonbase-testnet": {
       gas: 'auto',
       gasPrice: 'auto',
-      url: process.env.BOBA_MOONBASE_URL as string,
+      url: process.env.RPC_URL as string,
       accounts: [process.env.DEPLOYER_PRIVATE_KEY as string]
     }
   }
