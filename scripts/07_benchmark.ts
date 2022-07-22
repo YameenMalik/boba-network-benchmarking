@@ -88,7 +88,7 @@ if(oraclePriceAtStart == oraclePriceAtEnd){
 }
 
 // process .env variables
-const rpcURL = process.env.BOBA_RINKEBY_URL || "";
+const rpcURL = process.env.RPC_URL || "";
 // this account must have BOBA tokens and should be whitelisted as trade operator
 const adminAccountPvtKey = process.env.DEPLOYER_PRIVATE_KEY || "";
 // read deployed contract addresses
@@ -108,13 +108,13 @@ const MARGIN_BANK_ADDRESS = getAddress("MarginBank");
 const TEST_TOKEN_ADDRESS = getAddress("Test_Token");
 const PRICE_ORACLE_ADDRESS = getAddress("PriceOracle");
 const ORDERS_ADDRESS = getAddress("Orders");
-const PERPETUAL_ADDRESS = getAddress("PerpetualV1");
+const PERPETUAL_PROXY_ADDRESS = getAddress("PerpetualProxy");
 const LIQUIDATION_ADDRESS = getAddress("Liquidation");
 
 // initialize contracts
 const marginBank = MarginBank__factory.connect(MARGIN_BANK_ADDRESS, admin);
 const oracle = PriceOracle__factory.connect(PRICE_ORACLE_ADDRESS, admin);
-const perpetual = PerpetualV1__factory.connect(PERPETUAL_ADDRESS, admin);
+const perpetual = PerpetualV1__factory.connect(PERPETUAL_PROXY_ADDRESS, admin);
 const liquidation = Liquidation__factory.connect(
   LIQUIDATION_ADDRESS,
   new Wallet(adminAccountPvtKey, new ethers.providers.JsonRpcProvider("https://replica.bobabase.boba.network")
@@ -159,6 +159,12 @@ async function createFundedAccounts(numWallets: number) {
 
 
 
+const getPositionSize = async (accountAddress:string) => {
+    const balance = await perpetual.getAccountPositionBalance(accountAddress);
+    return Number(new BigNumber(balance.size.toHexString()).toFixed(0))/1e18;
+};
+
+
     
 async function main() {
 
@@ -190,6 +196,8 @@ async function main() {
     )).wait();
 
 
+  console.log("Position Size at start for maker:", await getPositionSize(accounts[0].address));
+
   // create N trades, each with M orders;
   console.log("Performing Trades:")
   for(let i =1; i <= totalTrades; i++) {
@@ -215,6 +223,8 @@ async function main() {
       transformedOrder.trades, 
       {gasLimit: 11_000_000})).wait();
   }
+
+  console.log("Position Size at end for maker:", await getPositionSize(accounts[0].address));
 
   console.log("Set oracle price at end to: ", oraclePriceAtEnd)
   await(await oracle.setPrice(
