@@ -21,7 +21,7 @@ const ordersAddress = "0x36AAc8c385E5FA42F6A7F62Ee91b5C2D813C451C";
 const walletsPath = `${__dirname}/wallets.json`;
 
 const w3 = new Web3(process.env.RPC_URL as string);
-const provider = new ethers.providers.JsonRpcProvider(process.env.BOBA_MOONBASE_URL as string);
+const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL as string);
 const faucet = new Wallet(process.env.DEPLOYER_PRIVATE_KEY as string, provider); 
 
 const orderFactory = new orderbook.Orders__factory(faucet);

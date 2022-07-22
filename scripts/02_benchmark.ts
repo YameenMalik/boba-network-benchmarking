@@ -12,27 +12,27 @@ config({ path: ".env" });
 
 // make sure to deploy the contract before running the script
 // BOBA RINKEBY
-// const perpetualV1Address = "0xE7f98A11D8B7870ceF9243b9153B5e18d2f2dA4e";
+// const perpetualProxyAddress = "0xE7f98A11D8B7870ceF9243b9153B5e18d2f2dA4e";
 // const ordersAddress = "0xb89A6553423863466f95f12066443ad811898B3c";
 
 
 // BOBA MOONBASE
-const perpetualV1Address = "0x52d92ebBe4122d8Ed5394819d302AD234001D2C7";
+const perpetualProxyAddress = "0x52d92ebBe4122d8Ed5394819d302AD234001D2C7";
 const ordersAddress = "0x36AAc8c385E5FA42F6A7F62Ee91b5C2D813C451C";
 
 // ARBITRUM
-// const perpetualV1Address = "0x4fe5cCC36975DA9Ea03b302B118a6be3455F3153";
+// const perpetualProxyAddress = "0x4fe5cCC36975DA9Ea03b302B118a6be3455F3153";
 // const ordersAddress = "0x905e24367781c232E673cF5F6AE119cA0D061c29";
 
 
 const walletsPath = `${__dirname}/wallets.json`;
 
 const w3 = new Web3(process.env.RPC_URL as string);
-const provider = new ethers.providers.JsonRpcProvider(process.env.BOBA_MOONBASE_URL as string);
+const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL as string);
 const faucet = new Wallet(process.env.DEPLOYER_PRIVATE_KEY as string, provider);
 
 const perpetualV1Factory = new orderbook.PerpetualV1__factory(faucet);
-const PerpetualV1 = perpetualV1Factory.attach(perpetualV1Address);
+const PerpetualV1 = perpetualV1Factory.attach(perpetualProxyAddress);
 
 let currentPositionSize:number = 0;
 
@@ -41,7 +41,7 @@ const replicaProvider = new ethers.providers.JsonRpcProvider("https://replica.bo
 // const replicaProvider = new ethers.providers.JsonRpcProvider("http://0.0.0.0:8549");
 const listenerFaucet = new Wallet(process.env.DEPLOYER_PRIVATE_KEY as string, replicaProvider); 
 const perpetualV1Factory2 = new orderbook.PerpetualV1__factory(listenerFaucet);
-const perpListener = perpetualV1Factory2.attach(perpetualV1Address);
+const perpListener = perpetualV1Factory2.attach(perpetualProxyAddress);
 
 
 // make sure these accounts have USDT in margin bank

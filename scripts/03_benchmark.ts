@@ -21,7 +21,7 @@ const ERC20Address = "0x57AB85a85f75fb4E9d2Ee85a28913F2DEe9aD283";
 const walletsPath = `${__dirname}/wallets.json`;
 
 
-const provider = new ethers.providers.JsonRpcProvider(process.env.BOBA_MOONBASE_URL as string);
+const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL as string);
 const faucet = new Wallet(process.env.DEPLOYER_PRIVATE_KEY as string, provider); 
 
 const ERC20Token = new Contract(ERC20Address, TEST_USDC_ABI.abi, provider);

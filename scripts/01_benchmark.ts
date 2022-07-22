@@ -10,7 +10,7 @@ const contractAddress = require("../deployedContracts.json")["StressTest"];
 const walletsPath = `${__dirname}/wallets.json`;
 
 
-const provider = new ethers.providers.JsonRpcProvider(process.env.BOBA_RINKEBY_URL as string);
+const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL as string);
 const faucet = new Wallet(process.env.DEPLOYER_PRIVATE_KEY as string, provider); 
 
 const stressTestFactory = new StressTest__factory(faucet);
